@@ -93,7 +93,15 @@
   - Write tests comparing Zero-Shot output with other techniques
   - _Requirements: 2.1_
 
-- [ ] 6.5 Implement Role-Based prompts
+- [x] 6.5 Implement Role-Based prompts
+
+
+
+
+
+
+
+
   - Create interviewer persona templates (strict, friendly, neutral)
   - Add company type and personality trait integration
   - Implement context-aware role adoption in question generation

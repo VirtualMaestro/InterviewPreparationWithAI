@@ -3,7 +3,6 @@ Prompt template infrastructure for AI interview question generation.
 Provides template management, variable substitution, and technique selection.
 """
 from dataclasses import dataclass, field
-from enum import Enum
 from typing import Any, Dict, List, Optional
 
 from models.enums import ExperienceLevel, InterviewType, PromptTechnique
