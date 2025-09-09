@@ -32,10 +32,23 @@ class PromptTemplate:
         """Extract variable names from template string"""
         import re
 
+        # Find all {variable_name} patterns, but exclude double braces {{}} used in JSON examples
+        # First, temporarily replace double braces to avoid matching them
+        temp_template = self.template.replace(
+            '{{', '__DOUBLE_OPEN__').replace('}}', '__DOUBLE_CLOSE__')
+
         # Find all {variable_name} patterns
         pattern = r'\{([^}]+)\}'
-        matches = re.findall(pattern, self.template)
-        return list(set(matches))  # Remove duplicates
+        matches = re.findall(pattern, temp_template)
+
+        # Filter out any matches that are part of JSON structure or contain newlines/complex content
+        variables = []
+        for match in matches:
+            # Only include simple variable names (alphanumeric, underscore, no spaces or special chars)
+            if re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', match.strip()):
+                variables.append(match.strip())
+
+        return list(set(variables))  # Remove duplicates
 
     def format(self, **kwargs) -> str:
         """

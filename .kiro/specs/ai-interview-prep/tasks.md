@@ -108,7 +108,13 @@
   - Write tests to verify persona consistency in generated questions
   - _Requirements: 2.1, 2.4_
 
-- [ ] 6.6 Implement Structured Output prompts
+- [x] 6.6 Implement Structured Output prompts
+
+
+
+
+
+
   - Create JSON-formatted response templates with question metadata
   - Add structured data fields (difficulty, category, time estimates, hints)
   - Implement JSON validation and parsing for structured responses
