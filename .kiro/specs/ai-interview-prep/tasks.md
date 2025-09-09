@@ -83,7 +83,10 @@
   - Write tests to verify reasoning chain presence in outputs
   - _Requirements: 2.1, 2.3_
 
-- [ ] 6.4 Implement Zero-Shot prompts
+- [x] 6.4 Implement Zero-Shot prompts
+
+
+
   - Create direct generation templates without examples or reasoning chains
   - Add concise, focused prompts for immediate question generation
   - Implement fallback mechanisms for when other techniques fail
