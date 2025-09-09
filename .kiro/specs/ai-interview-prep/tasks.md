@@ -30,13 +30,20 @@
 - [x] 4. Create cost calculation and tracking system
 
 
+
+
+
   - Implement CostCalculator with model-specific pricing for GPT-4o and GPT-5
   - Add token-based cost breakdown calculation (input, output, total)
   - Create cumulative cost tracking across sessions
   - Write unit tests for cost calculation accuracy with various token counts
   - _Requirements: 3.1, 3.2, 3.3, 3.4_
 
-- [ ] 5. Build rate limiting and API management
+- [x] 5. Build rate limiting and API management
+
+
+
+
   - Implement RateLimiter class with sliding window algorithm (100 calls/hour)
   - Add rate limit checking, call recording, and reset time calculation
   - Create remaining calls counter and limit exceeded handling
