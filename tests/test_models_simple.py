@@ -10,7 +10,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-# Add src to Python path
+# Add src to Python path BEFORE imports
 sys.path.append(str(Path(__file__).parent / "src"))
 
 

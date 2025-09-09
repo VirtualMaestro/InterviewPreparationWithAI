@@ -1,13 +1,18 @@
 """
-Simple test to verify project setup
+Simple test to verify project setup with proper imports
 """
-from config import Config
-from src.utils.logger import setup_logging
+import sys
+from pathlib import Path
+
+# Add src to path BEFORE imports
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 
 def test_config():
     """Test configuration setup"""
     print("Testing configuration...")
+
+    from config import Config
 
     config = Config()
     print(f"✓ Config initialized: {config.APP_NAME} v{config.VERSION}")
@@ -29,6 +34,8 @@ def test_config():
 def test_logging():
     """Test logging setup"""
     print("\nTesting logging...")
+
+    from utils.logger import setup_logging
 
     logger = setup_logging()
     logger.info("Test log message")
