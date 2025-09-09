@@ -1,11 +1,16 @@
 """
 Simple security validation test
 """
+import os
 import sys
-from pathlib import Path
 
-# Add src to Python path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+# Add src to path for imports
+test_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(test_dir)
+src_path = os.path.join(project_root, 'src')
+
+if src_path not in sys.path:
+    sys.path.insert(0, src_path)
 
 
 def test_security_validation():
