@@ -27,7 +27,9 @@
   - Write comprehensive security tests with malicious input scenarios
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
 
-- [ ] 4. Create cost calculation and tracking system
+- [x] 4. Create cost calculation and tracking system
+
+
   - Implement CostCalculator with model-specific pricing for GPT-4o and GPT-5
   - Add token-based cost breakdown calculation (input, output, total)
   - Create cumulative cost tracking across sessions
