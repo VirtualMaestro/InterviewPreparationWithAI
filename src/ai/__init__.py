@@ -1,1 +1,1 @@
-# AI components for question generation and prompt engineering
+# AI and prompt engineering components
