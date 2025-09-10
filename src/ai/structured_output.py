@@ -760,6 +760,13 @@ Respond with valid JSON only:""",
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON response: {e}")
 
+        # Check if data is None or not a dictionary
+        if data is None:
+            raise ValueError("JSON response is null")
+
+        if not isinstance(data, dict):
+            raise ValueError("JSON response must be an object/dictionary")
+
         # Validate required top-level keys
         required_keys = ["questions", "recommendations", "metadata"]
         for key in required_keys:

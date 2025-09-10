@@ -9,7 +9,7 @@ import sys
 import traceback
 from pathlib import Path
 
-from ai.prompts import PromptLibrary, PromptTemplate, prompt_library
+from ai.prompts import PromptTemplate, prompt_library
 from ai.structured_output import StructuredOutputPrompts
 from models.enums import (DifficultyLevel, ExperienceLevel, InterviewType,
                           PromptTechnique, QuestionCategory)
@@ -331,7 +331,9 @@ def run_existing_test_suites():
     test_files = [
         'test_prompts_simple.py',
         'test_structured_output_simple.py',
-        'test_structured_output_integration.py'
+        'test_structured_output_integration.py',
+        'test_edge_cases_comprehensive.py',
+        'test_uncovered_functionality.py'
     ]
 
     for test_file in test_files:

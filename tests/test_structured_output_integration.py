@@ -163,6 +163,11 @@ def test_json_schema_compliance():
 
         # Validate against schema structure
         assert "questions" in sample_response
+
+        # Verify schema defines the expected structure
+        assert "questions" in schema["properties"], "Schema should define questions structure"
+        assert "recommendations" in schema["properties"], "Schema should define recommendations structure"
+        assert "metadata" in schema["properties"], "Schema should define metadata structure"
         assert "recommendations" in sample_response
         assert "metadata" in sample_response
 
@@ -393,6 +398,11 @@ def run_all_integration_tests():
         print(f"❌ Integration test failed: {e}")
         traceback.print_exc()
         return False
+
+
+def run_all_tests():
+    """Compatibility function for complete system test"""
+    return run_all_integration_tests()
 
 
 if __name__ == "__main__":
