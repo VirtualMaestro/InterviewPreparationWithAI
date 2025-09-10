@@ -94,3 +94,11 @@ echo. > src\new_module\__init__.py
 - Use Pydantic models for all data structures
 - Implement field validators for business logic
 - Sanitize user inputs to prevent security issues
+
+### Testing Requirements
+- **After every feature that you implemented, write tests to cover the edge cases and all the functionality**
+- Create comprehensive test suites for each new component
+- Include edge case testing for boundary conditions and error scenarios
+- Test both positive and negative paths
+- Ensure integration tests cover cross-component interactions
+- Maintain test coverage above 90% for all new code
