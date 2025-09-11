@@ -121,7 +121,7 @@
   - Write tests for JSON format compliance and data completeness
   - _Requirements: 2.1, 2.5_
 
-- [ ] 7. Build AI question generator with retry logic
+- [x] 7. Build AI question generator with retry logic
   - Implement InterviewQuestionGenerator class with OpenAI API integration
   - Add async API calls with tenacity retry logic (3 attempts, exponential backoff)
   - Create prompt template application and variable substitution
@@ -129,7 +129,7 @@
   - Write integration tests with mocked API responses and error scenarios
   - _Requirements: 5.3, 8.1, 8.2, 8.4, 8.5_
 
-- [ ] 8. Create response parsing and fallback systems
+- [x] 8. Create response parsing and fallback systems
   - Implement structured JSON response parsing with error handling
   - Add text-based response parsing with question extraction algorithms
   - Create fallback parsing methods for malformed or unexpected responses

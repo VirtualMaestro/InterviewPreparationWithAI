@@ -44,3 +44,9 @@ class QuestionCategory(Enum):
     CONCEPTUAL = "conceptual"
     BEHAVIORAL = "behavioral"
     CASE_STUDY = "case_study"
+
+
+class AIModel(Enum):
+    """Available AI models for generation"""
+    GPT_4O = "gpt-4o-2024-08-06"
+    GPT_5 = "gpt-5-preview"
