@@ -48,5 +48,5 @@ class QuestionCategory(Enum):
 
 class AIModel(Enum):
     """Available AI models for generation"""
-    GPT_4O = "gpt-4o-2024-08-06"
-    GPT_5 = "gpt-5-preview"
+    GPT_4O = "gpt-4o"
+    GPT_4O_MINI = "gpt-4o-mini"

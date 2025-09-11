@@ -253,8 +253,10 @@ Recommendations:
     async def test_rate_limit_error(self, mock_rate_limiter):
         """Test handling of rate limit errors."""
         # Mock rate limiter to return false
-        mock_rate_limiter.check_rate_limit.return_value = False
-        mock_rate_limiter.get_reset_time.return_value = 3600
+        mock_rate_limiter.can_make_call.return_value = False
+        mock_status = Mock()
+        mock_status.time_until_reset.total_seconds.return_value = 3600
+        mock_rate_limiter.get_rate_limit_status.return_value = mock_status
         
         # Try to generate questions
         result = await self.generator.generate_questions(self.sample_request)
@@ -400,7 +402,7 @@ Tips:
         self.assertIn("model", stats)
         self.assertEqual(stats["model"], "gpt-4o-2024-08-06")
         self.assertIn("total_cost", stats)
-        self.assertIn("rate_limit_remaining", stats)
+        self.assertIn("rate_limit_status", stats)
     
     def test_sync_generation_wrapper(self):
         """Test synchronous wrapper for async generation."""

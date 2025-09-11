@@ -1,6 +1,30 @@
 {
-  "history": [],
+  "history": [
+    {
+      "session_id": "c3583b8c",
+      "timestamp": "2025-09-11T17:58:05.264086",
+      "input_config": {
+        "job_description": "A senior Python developer leads the design, development, and maintenance of robust, scalable Python ...",
+        "interview_type": "Technical Questions",
+        "experience_level": "Mid-level (3-5 years)",
+        "prompt_technique": "Structured Output",
+        "question_count": 5,
+        "temperature": 0.7,
+        "company_type": "FAANG",
+        "ai_model": "gpt-4o"
+      },
+      "questions": [],
+      "recommendations": [],
+      "cost_breakdown": null,
+      "metadata": {
+        "session_number": 1,
+        "api_key_used": true
+      },
+      "error": "Total cost must equal input_cost + output_cost",
+      "success": false
+    }
+  ],
   "total_cost": 0.0,
   "total_tokens": 0,
-  "session_count": 0
+  "session_count": 1
 }

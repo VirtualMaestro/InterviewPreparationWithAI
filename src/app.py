@@ -15,6 +15,14 @@ from ai.generator import InterviewQuestionGenerator
 from ui.components import input_components, results_display, progress_indicators
 from ui.session import session_manager
 from utils.security import SecurityValidator
+from utils.error_handler import (
+    global_error_handler, 
+    handle_errors, 
+    handle_async_errors,
+    ErrorContext,
+    ConfigurationError,
+    ErrorCategory
+)
 from config import Config
 
 
@@ -33,6 +41,11 @@ class InterviewPrepApp:
         self.generator = None
         self.debug_mode = os.getenv("DEBUG", "false").lower() == "true"
     
+    @handle_errors(
+        error_handler=global_error_handler,
+        attempt_recovery=True,
+        reraise=False
+    )
     def initialize(self) -> bool:
         """
         Initialize application and validate setup.
@@ -40,25 +53,41 @@ class InterviewPrepApp:
         Returns:
             True if initialization successful
         """
-        # Initialize session
-        session_manager._initialize_state()
+        error_context = ErrorContext(
+            operation="app_initialization",
+            additional_info={"debug_mode": self.debug_mode}
+        )
         
-        # Check for API key
-        api_key = session_manager.get_api_key()
-        
-        if not api_key:
-            return False
-        
-        # Initialize generator if not already done
-        if not self.generator:
-            try:
-                self.generator = InterviewQuestionGenerator(api_key)
-                return True
-            except Exception as e:
-                st.error(f"Failed to initialize AI generator: {str(e)}")
+        try:
+            # Initialize session
+            session_manager._initialize_state()
+            
+            # Check for API key
+            api_key = session_manager.get_api_key()
+            
+            if not api_key:
+                global_error_handler.handle_error(
+                    ConfigurationError("No API key provided"),
+                    error_context
+                )
                 return False
-        
-        return True
+            
+            # Initialize generator if not already done
+            if not self.generator:
+                try:
+                    self.generator = InterviewQuestionGenerator(api_key)
+                    return True
+                except Exception as e:
+                    global_error_handler.handle_error(e, error_context)
+                    st.error(f"Failed to initialize AI generator: {str(e)}")
+                    return False
+            
+            return True
+            
+        except Exception as e:
+            global_error_handler.handle_error(e, error_context)
+            st.error(f"Application initialization failed: {str(e)}")
+            return False
     
     async def validate_api_key(self, api_key: str) -> bool:
         """
@@ -137,6 +166,11 @@ class InterviewPrepApp:
                     finally:
                         loop.close()
     
+    @handle_async_errors(
+        error_handler=global_error_handler,
+        attempt_recovery=True,
+        reraise=False
+    )
     async def generate_questions_async(
         self,
         config: Any,
@@ -152,6 +186,16 @@ class InterviewPrepApp:
         Returns:
             Results dictionary
         """
+        error_context = ErrorContext(
+            operation="generate_questions_async",
+            additional_info={
+                "interview_type": config.interview_type.value if hasattr(config, 'interview_type') else None,
+                "experience_level": config.experience_level.value if hasattr(config, 'experience_level') else None,
+                "prompt_technique": config.prompt_technique.value if hasattr(config, 'prompt_technique') else None,
+                "question_count": getattr(config, 'question_count', None)
+            }
+        )
+        
         try:
             # Update progress
             if progress_callback:
@@ -253,6 +297,7 @@ class InterviewPrepApp:
             
         except Exception as e:
             error_msg = str(e)
+            global_error_handler.handle_error(e, error_context)
             session_manager.update_session_error(error_msg)
             raise Exception(f"Generation failed: {error_msg}")
     
@@ -371,6 +416,12 @@ class InterviewPrepApp:
             
             st.divider()
             
+            # Error monitoring
+            from ui.error_display import ErrorDisplayManager
+            ErrorDisplayManager.show_error_summary_widget()
+            
+            st.divider()
+            
             # About
             with st.expander("ℹ️ About"):
                 st.markdown("""
@@ -383,6 +434,7 @@ class InterviewPrepApp:
                 - 4 interview types
                 - Cost tracking
                 - Session history
+                - Error monitoring
                 
                 Built with OpenAI GPT-4
                 """)
@@ -415,7 +467,7 @@ class InterviewPrepApp:
             })
         
         # Main interface tabs
-        tab1, tab2, tab3 = st.tabs(["🎯 Generate", "📊 Results", "📈 Analytics"])
+        tab1, tab2, tab3, tab4 = st.tabs(["🎯 Generate", "📊 Results", "📈 Analytics", "🚨 Errors"])
         
         with tab1:
             # Get input configuration
@@ -511,6 +563,11 @@ class InterviewPrepApp:
                     st.divider()
                     st.markdown("### 🚦 API Status")
                     st.json(gen_stats['rate_limit_status'])
+        
+        with tab4:
+            # Error monitoring and debugging
+            from ui.error_display import ErrorDisplayManager
+            ErrorDisplayManager.show_error_dashboard()
 
 
 # Create global instance

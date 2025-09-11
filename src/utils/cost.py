@@ -3,7 +3,7 @@ Cost calculation and tracking system for OpenAI API usage.
 Provides model-specific pricing, token-based cost breakdown, and cumulative tracking.
 """
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict, Optional
 
 
@@ -85,12 +85,12 @@ class CostCalculator:
         input_cost = (input_tokens / 1000.0) * pricing.input_cost_per_1k_tokens
         output_cost = (output_tokens / 1000.0) * \
             pricing.output_cost_per_1k_tokens
-        total_cost = input_cost + output_cost
 
         # Round to 6 decimal places for precision
         input_cost = round(input_cost, 6)
         output_cost = round(output_cost, 6)
-        total_cost = round(total_cost, 6)
+        # Calculate total from rounded components to ensure consistency
+        total_cost = round(input_cost + output_cost, 6)
 
         return {
             "input_cost": input_cost,

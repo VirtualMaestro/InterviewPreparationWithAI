@@ -37,6 +37,15 @@ from models.simple_schemas import (
 from utils.cost import cost_calculator
 from utils.rate_limiter import rate_limiter
 from utils.security import SecurityValidator
+from utils.error_handler import (
+    global_error_handler, 
+    handle_async_errors, 
+    ErrorContext,
+    APIError as AppAPIError,
+    RateLimitError as AppRateLimitError,
+    ValidationError,
+    ErrorCategory
+)
 from ai.prompts import prompt_library, PromptTemplate
 from ai.few_shot import FewShotPrompts
 from ai.chain_of_thought import ChainOfThoughtPrompts
@@ -115,6 +124,11 @@ class InterviewQuestionGenerator:
         
         logger.info(f"Initialized generator with model: {model.value}")
     
+    @handle_async_errors(
+        error_handler=global_error_handler,
+        attempt_recovery=True,
+        reraise=True
+    )
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=1, max=10),
@@ -144,10 +158,19 @@ class InterviewQuestionGenerator:
             RateLimitError: When rate limit exceeded
         """
         # Check rate limit
-        if not rate_limiter.check_rate_limit():
-            remaining_time = rate_limiter.get_reset_time()
-            raise RateLimitError(
-                f"Rate limit exceeded. Reset in {remaining_time:.0f} seconds"
+        if not rate_limiter.can_make_call():
+            status = rate_limiter.get_rate_limit_status()
+            context = ErrorContext(
+                operation="api_call",
+                additional_info={
+                    "rate_limit_status": status._asdict() if hasattr(status, '_asdict') else str(status),
+                    "model": self.model.value
+                }
+            )
+            raise AppRateLimitError(
+                f"Rate limit exceeded. Reset in {status.time_until_reset.total_seconds():.0f} seconds",
+                retry_after=int(status.time_until_reset.total_seconds()),
+                context=context
             )
         
         try:
@@ -182,11 +205,19 @@ class InterviewQuestionGenerator:
             return result
             
         except asyncio.TimeoutError:
+            context = ErrorContext(
+                operation="api_call",
+                additional_info={"timeout_duration": 30, "model": self.model.value}
+            )
             logger.error("API call timed out")
-            raise APIError("API call timed out after 30 seconds")
+            raise AppAPIError("API call timed out after 30 seconds", context=context)
         except Exception as e:
+            context = ErrorContext(
+                operation="api_call",
+                additional_info={"model": self.model.value, "error_type": type(e).__name__}
+            )
             logger.error(f"API call failed: {str(e)}")
-            raise APIError(f"API call failed: {str(e)}")
+            raise AppAPIError(f"API call failed: {str(e)}", context=context, cause=e)
     
     def _select_prompt_template(
         self,
@@ -386,6 +417,11 @@ class InterviewQuestionGenerator:
             }
         }
     
+    @handle_async_errors(
+        error_handler=global_error_handler,
+        attempt_recovery=False,
+        reraise=False
+    )
     async def generate_questions(
         self,
         request: GenerationRequest,
@@ -401,22 +437,53 @@ class InterviewQuestionGenerator:
         Returns:
             Generation result with questions and metadata
         """
-        # Validate input
-        validation = self.security.validate_input(
-            request.job_description,
-            input_type="job_description"
+        # Create error context for this operation
+        error_context = ErrorContext(
+            operation="generate_questions",
+            additional_info={
+                "interview_type": request.interview_type.value,
+                "experience_level": request.experience_level.value,
+                "question_count": request.question_count,
+                "model": self.model.value,
+                "preferred_technique": preferred_technique.value if preferred_technique else None
+            }
         )
-        if not validation["is_valid"]:
+        
+        try:
+            # Validate input
+            validation = self.security.validate_input(
+                request.job_description,
+                field_name="job_description"
+            )
+            if not validation.is_valid:
+                error_msg = validation.warnings[0] if validation.warnings else "Validation failed"
+                global_error_handler.handle_error(
+                    ValidationError(error_msg, field_name="job_description"),
+                    error_context
+                )
+                return GenerationResult(
+                    questions=[],
+                    recommendations=[],
+                    metadata={"error": error_msg},
+                    cost_breakdown=CostBreakdown(0, 0, 0, 0, 0),
+                    raw_response="",
+                    technique_used=PromptTechnique.ZERO_SHOT,
+                    model_used=self.model,
+                    success=False,
+                    error_message=error_msg
+                )
+        except Exception as e:
+            global_error_handler.handle_error(e, error_context)
             return GenerationResult(
                 questions=[],
-                recommendations=[],
-                metadata={"error": validation["error"]},
+                recommendations=["Unable to validate input. Please try again."],
+                metadata={"error": str(e)},
                 cost_breakdown=CostBreakdown(0, 0, 0, 0, 0),
                 raw_response="",
                 technique_used=PromptTechnique.ZERO_SHOT,
                 model_used=self.model,
                 success=False,
-                error_message=validation["error"]
+                error_message=str(e)
             )
         
         # Determine techniques to try
@@ -488,7 +555,11 @@ class InterviewQuestionGenerator:
                 )
                 
                 # Track cumulative cost
-                cost_calculator.track_session_cost(cost_breakdown)
+                cost_calculator.add_usage(
+                    self.model.value,
+                    api_response["usage"]["prompt_tokens"],
+                    api_response["usage"]["completion_tokens"]
+                )
                 
                 # Build result
                 return GenerationResult(
@@ -508,12 +579,14 @@ class InterviewQuestionGenerator:
                     success=True
                 )
                 
-            except (APIError, RateLimitError, ParsingError) as e:
+            except (APIError, RateLimitError, ParsingError, AppAPIError, AppRateLimitError) as e:
                 logger.error(f"Technique {technique.value} failed: {str(e)}")
+                global_error_handler.handle_error(e, error_context)
                 last_error = str(e)
                 continue
             except Exception as e:
                 logger.error(f"Unexpected error with {technique.value}: {str(e)}")
+                global_error_handler.handle_error(e, error_context)
                 last_error = str(e)
                 continue
         

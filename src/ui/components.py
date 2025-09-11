@@ -23,6 +23,8 @@ from models.simple_schemas import (
 )
 from utils.security import SecurityValidator
 from utils.cost import cost_calculator
+from utils.error_handler import global_error_handler, ErrorContext
+from ui.error_display import ErrorDisplayManager
 
 
 @dataclass
@@ -234,7 +236,7 @@ class InputComponents:
                 # Model selection
                 model_options = {
                     "GPT-4o (Recommended)": AIModel.GPT_4O,
-                    "GPT-5 Preview": AIModel.GPT_5
+                    "GPT-4o Mini (Faster/Cheaper)": AIModel.GPT_4O_MINI
                 }
                 
                 selected_model_label = st.selectbox(
@@ -250,7 +252,7 @@ class InputComponents:
                 # Display model info
                 model_info = {
                     AIModel.GPT_4O: "Balanced performance and cost",
-                    AIModel.GPT_5: "Advanced capabilities, higher cost"
+                    AIModel.GPT_4O_MINI: "Faster and more cost-effective"
                 }
                 st.caption(f"ℹ️ {model_info[ai_model]}")
                 
@@ -415,7 +417,7 @@ class InputComponents:
             InputConfig object or None if validation fails
         """
         # Get job description
-        job_desc, is_valid, error = self.render_job_description()
+        job_desc, is_valid, _ = self.render_job_description()
         
         if not job_desc:
             st.warning("⚠️ Please enter a job description to continue")
@@ -1181,6 +1183,181 @@ class ProgressIndicators:
             container["details"].caption(details)
         else:
             container["details"].empty()
+    
+    def show_error_details(
+        self,
+        error: Exception,
+        show_traceback: bool = False,
+        context: Optional[str] = None
+    ) -> None:
+        """
+        Display error details with optional troubleshooting information.
+        
+        Args:
+            error: The exception that occurred
+            show_traceback: Whether to show the full traceback
+            context: Optional context description
+        """
+        # Handle the error through the error handler
+        error_context = ErrorContext(
+            operation=context or "ui_operation",
+            additional_info={"ui_component": "progress_indicators"}
+        )
+        
+        recovery_successful, user_message, recovery_result = global_error_handler.handle_error(
+            error, error_context, attempt_recovery=False
+        )
+        
+        # Get the error record for display
+        if global_error_handler.error_history:
+            error_record = global_error_handler.error_history[-1]
+            ErrorDisplayManager.show_error_message(
+                error_record,
+                show_details=show_traceback,
+                show_recovery_options=True
+            )
+        else:
+            # Fallback display
+            st.error(f"An error occurred: {str(error)}")
+            
+        # Show debug information if requested
+        if show_traceback:
+            self.show_debug_info({
+                "error_type": type(error).__name__,
+                "error_message": str(error),
+                "context": context,
+                "timestamp": datetime.now().isoformat()
+            })
+    
+    def show_debug_info(self, debug_data: Dict[str, Any]) -> None:
+        """
+        Display debug information in an expandable section.
+        
+        Args:
+            debug_data: Dictionary of debug information to display
+        """
+        with st.expander("🐛 Debug Information", expanded=False):
+            st.json(debug_data)
+            
+            # Show error statistics
+            if st.button("📊 Show Error Statistics"):
+                ErrorDisplayManager.show_error_dashboard()
+    
+    def show_error_recovery_options(
+        self,
+        error_type: str,
+        recovery_action: Optional[Callable] = None
+    ) -> None:
+        """
+        Show error recovery options with action buttons.
+        
+        Args:
+            error_type: Type of error that occurred
+            recovery_action: Optional function to call for recovery
+        """
+        st.markdown("### 🛠️ Recovery Options")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            if st.button("🔄 Retry Operation"):
+                if recovery_action:
+                    try:
+                        recovery_action()
+                        st.success("✅ Recovery attempt initiated")
+                    except Exception as e:
+                        st.error(f"❌ Recovery failed: {str(e)}")
+                else:
+                    st.info("Please try the operation again manually")
+        
+        with col2:
+            if st.button("🔧 Reset Session"):
+                # Clear any cached data
+                for key in list(st.session_state.keys()):
+                    if key.startswith(('generation_', 'current_', 'error_')):
+                        del st.session_state[key]
+                st.success("✅ Session reset")
+                st.rerun()
+        
+        with col3:
+            if st.button("📞 Get Help"):
+                self._show_help_information(error_type)
+    
+    def _show_help_information(self, error_type: str) -> None:
+        """Show contextual help information based on error type."""
+        help_messages = {
+            "api_error": """
+            **API Error Help:**
+            - Check your internet connection
+            - Verify your OpenAI API key is valid
+            - Ensure you have sufficient API credits
+            - Try again in a moment
+            """,
+            "rate_limit": """
+            **Rate Limit Help:**
+            - Wait for the rate limit to reset
+            - Consider upgrading your API plan
+            - Reduce the number of requests
+            """,
+            "validation_error": """
+            **Validation Error Help:**
+            - Check your input meets requirements
+            - Ensure text is within length limits
+            - Remove any special characters
+            - Try rephrasing your input
+            """,
+            "network_error": """
+            **Network Error Help:**
+            - Check your internet connection
+            - Try refreshing the page
+            - Disable VPN if using one
+            - Check firewall settings
+            """
+        }
+        
+        help_text = help_messages.get(
+            error_type, 
+            "Contact support if the issue persists."
+        )
+        
+        st.info(help_text)
+    
+    def show_operation_status(
+        self,
+        operation: str,
+        status: str,
+        progress: float = 0.0,
+        details: Optional[str] = None,
+        error: Optional[Exception] = None
+    ) -> None:
+        """
+        Show comprehensive operation status with error handling.
+        
+        Args:
+            operation: Name of the operation
+            status: Current status
+            progress: Progress value (0.0 to 1.0)
+            details: Additional details
+            error: Optional error that occurred
+        """
+        st.markdown(f"### {operation}")
+        
+        if error:
+            # Show error state
+            st.error(f"❌ {status}")
+            self.show_error_details(error, context=operation)
+        else:
+            # Show normal progress
+            if progress > 0:
+                st.progress(progress)
+            
+            if status in self.status_messages:
+                st.info(self.status_messages[status])
+            else:
+                st.info(status)
+            
+            if details:
+                st.caption(details)
 
 
 # Create global instances

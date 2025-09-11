@@ -19,7 +19,7 @@ class AISettings:
 
     def __post_init__(self):
         """Validate settings after initialization"""
-        if self.model not in ["gpt-4o", "gpt-5"]:
+        if self.model not in ["gpt-4o", "gpt-4o-mini"]:
             raise ValueError(f"Invalid model: {self.model}")
 
         if not 0.0 <= self.temperature <= 2.0:
