@@ -99,12 +99,12 @@ class InputComponents:
             # Security validation
             validation_result = self.security.validate_input(
                 job_description,
-                input_type="job_description"
+                field_name="job_description"
             )
             
-            if not validation_result["is_valid"]:
+            if not validation_result.is_valid:
                 is_valid = False
-                error_message = validation_result["error"]
+                error_message = validation_result.warnings[0] if validation_result.warnings else "Security validation failed"
                 st.error(f"🔒 Security: {error_message}")
             
             # Character count
