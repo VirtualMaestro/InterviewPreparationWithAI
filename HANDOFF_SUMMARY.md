@@ -7,6 +7,19 @@
 **Current Phase**: Core AI System Complete - Ready for Final Integration  
 **Handoff Date**: 2025-01-09 (Updated)  
 
+## 📋 Essential Context Files to Read First
+**CRITICAL**: Before starting any work, read these files to understand the complete project context:
+
+1. **Read #ai-interview-prep folder**: `.kiro/specs/ai-interview-prep/`
+   - `requirements.md` - Complete EARS format requirements
+   - `design.md` - Full architecture and design decisions  
+   - `tasks.md` - Implementation plan with current status
+
+2. **Read #steering folder**: `.kiro/steering/`
+   - `tech.md` - Technology stack and development standards
+   - `structure.md` - Project organization and file structure
+   - `product.md` - Product overview and core features
+
 ## ✅ Completed Tasks (11/16) - Major Progress!
 
 ### ✅ Task 1: Project Structure and Core Configuration
@@ -367,19 +380,6 @@ The AI Interview Prep application now has a complete, tested, and production-rea
 - `tests/test_complete_system.py` - Comprehensive system verification
 
 ## 🤖 Instructions for Next AI Agent Session
-
-### 📋 Essential Context Files to Read First
-**CRITICAL**: Before starting any work, read these files to understand the complete project context:
-
-1. **Read #ai-interview-prep folder**: `.kiro/specs/ai-interview-prep/`
-   - `requirements.md` - Complete EARS format requirements
-   - `design.md` - Full architecture and design decisions  
-   - `tasks.md` - Implementation plan with current status
-
-2. **Read #steering folder**: `.kiro/steering/`
-   - `tech.md` - Technology stack and development standards
-   - `structure.md` - Project organization and file structure
-   - `product.md` - Product overview and core features
 
 ### 🎯 Current Status Summary
 - **11/16 tasks complete** (68.75% done)
