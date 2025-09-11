@@ -104,7 +104,6 @@
 ```
 InterviewPreparationWithAI_Kiro/
 ├── .env.example              # Environment template
-├── requirements.txt          # Essential packages only
 ├── HANDOFF_SUMMARY.md       # This updated file
 ├── logs/                    # Auto-created log directory
 ├── exports/                 # Auto-created exports directory
@@ -114,10 +113,15 @@ InterviewPreparationWithAI_Kiro/
 │   └── specs/ai-interview-prep/
 │       ├── requirements.md   # EARS format requirements
 │       ├── design.md        # Complete architecture design
-│       └── tasks.md         # Implementation plan (10/16 complete)
+│       └── tasks.md         # Implementation plan (10/16 complete)├── .kiro/
+│   └── steering/
+│       ├── product.md   
+│       ├── structure.md      
+│       └── tech.md         
 ├── src/                     # Main application source
 │   ├── __init__.py
 │   ├── config.py           # ✅ Centralized configuration
+│   ├── pyproject.toml           # ✅ Essential packages only
 │   ├── models/
 │   │   ├── __init__.py
 │   │   ├── enums.py        # ✅ All application enums
