@@ -1,0 +1,28 @@
+[MASTER]
+# Add src directory to Python path for proper import resolution
+init-hook='import sys; sys.path.append("src")'
+
+[MESSAGES CONTROL]
+# Disable some overly strict or false-positive warnings
+disable=
+    C0111,  # missing-docstring (we have docstrings where needed)
+    C0103,  # invalid-name (for simple variable names)
+    R0903,  # too-few-public-methods (for simple classes)
+    R0913,  # too-many-arguments (some functions need many params)
+    W0212,  # protected-access (we use _internal methods intentionally)
+    E0401,  # import-error (false positives with our structure)
+    C0301,  # line-too-long (handled by formatter)
+
+[FORMAT]
+# Maximum line length
+max-line-length=100
+
+[DESIGN]
+# Maximum number of arguments for function / method
+max-args=7
+
+# Maximum number of attributes for a class
+max-attributes=10
+
+# Maximum number of public methods for a class
+max-public-methods=20
