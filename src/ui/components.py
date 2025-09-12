@@ -5,27 +5,23 @@ This module provides reusable UI components for the interview preparation
 application, including input forms, display components, and status indicators.
 """
 
-import streamlit as st
-from typing import Dict, List, Optional, Tuple, Any, Callable
+from typing import List, Any, Callable
 from dataclasses import dataclass
-import re
 from datetime import datetime
 
-from models.enums import (
+import streamlit as st
+from ..utils.cost import cost_calculator
+from ..utils.error_handler import global_error_handler, ErrorContext
+from ..ui.error_display import ErrorDisplayManager
+
+from ..models.enums import (
     InterviewType,
     ExperienceLevel,
     PromptTechnique,
     AIModel
 )
-from models.simple_schemas import (
-    GenerationRequest,
-    AISettings
-)
-from utils.security import SecurityValidator
-from utils.cost import cost_calculator
-from utils.error_handler import global_error_handler, ErrorContext
-from ui.error_display import ErrorDisplayManager
 
+from ..utils.security import SecurityValidator
 
 @dataclass
 class InputConfig:
@@ -37,9 +33,9 @@ class InputConfig:
     ai_model: AIModel
     question_count: int
     temperature: float
-    company_type: Optional[str] = None
-    focus_areas: Optional[str] = None
-    persona: Optional[str] = None
+    company_type: str | None = None
+    focus_areas: str | None = None
+    persona: str | None = None
 
 
 class InputComponents:
@@ -56,7 +52,7 @@ class InputComponents:
         self.min_description_length = 20
         self.max_description_length = 5000
     
-    def render_job_description(self, key: str = "job_description") -> Tuple[str, bool, Optional[str]]:
+    def render_job_description(self, key: str = "job_description") -> tuple[str, bool, str | None]:
         """
         Render job description text area with validation.
         
@@ -96,7 +92,7 @@ class InputComponents:
             if len(job_description) < self.min_description_length:
                 is_valid = False
                 error_message = f"Job description must be at least {self.min_description_length} characters"
-                st.error(f"❌ {error_message}")
+                _ = st.error(f"❌ {error_message}")
             
             # Security validation
             validation_result = self.security.validate_input(
@@ -107,7 +103,7 @@ class InputComponents:
             if not validation_result.is_valid:
                 is_valid = False
                 error_message = validation_result.warnings[0] if validation_result.warnings else "Security validation failed"
-                st.error(f"🔒 Security: {error_message}")
+                _ = st.error(f"🔒 Security: {error_message}")
             
             # Character count
             char_count = len(job_description)
@@ -217,7 +213,7 @@ class InputComponents:
     def render_advanced_settings(
         self,
         key_prefix: str = "advanced"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Render advanced settings expander.
         
@@ -411,7 +407,7 @@ class InputComponents:
                 "persona": persona
             }
     
-    def get_input_config(self) -> Optional[InputConfig]:
+    def get_input_config(self) -> InputConfig | None:
         """
         Get complete input configuration from all components.
         
@@ -488,7 +484,7 @@ class ResultsDisplay:
     def render_questions(
         self,
         questions: List[str],
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: List[dict[str, Any]] | None = None
     ) -> None:
         """
         Render interview questions with formatting.
@@ -553,8 +549,8 @@ class ResultsDisplay:
     
     def render_cost_metrics(
         self,
-        cost_breakdown: Dict[str, float],
-        token_counts: Optional[Dict[str, int]] = None
+        cost_breakdown: dict[str, float],
+        token_counts: dict[str, int] | None = None
     ) -> None:
         """
         Render cost metrics display.
@@ -652,7 +648,7 @@ class ResultsDisplay:
     
     def render_session_metadata(
         self,
-        session_data: Dict[str, Any]
+        session_data: dict[str, Any]
     ) -> None:
         """
         Render session metadata and information.
@@ -687,7 +683,7 @@ class ResultsDisplay:
         self,
         questions: List[str],
         recommendations: List[str],
-        session_data: Dict[str, Any]
+        session_data: dict[str, Any]
     ) -> None:
         """
         Render export options for results.
@@ -740,7 +736,7 @@ class ResultsDisplay:
         self,
         questions: List[str],
         recommendations: List[str],
-        session_data: Dict[str, Any]
+        session_data: dict[str, Any]
     ) -> str:
         """Format results as plain text."""
         text = f"""INTERVIEW PREPARATION QUESTIONS
@@ -765,7 +761,7 @@ Technique: {session_data.get('technique', 'N/A')}
         self,
         questions: List[str],
         recommendations: List[str],
-        session_data: Dict[str, Any]
+        session_data: dict[str, Any]
     ) -> str:
         """Format results as markdown."""
         md = f"""# Interview Preparation Questions
@@ -817,7 +813,7 @@ class ProgressIndicators:
         self,
         progress: float,
         status: str,
-        details: Optional[str] = None
+        details: str | None = None
     ) -> None:
         """
         Display progress bar with status message.
@@ -836,19 +832,18 @@ class ProgressIndicators:
         # Display status message
         col1, col2 = st.columns([3, 1])
         with col1:
-            st.markdown(f"**{message}**")
+            _ = st.markdown(f"**{message}**")
             if details:
-                st.caption(details)
+                _ = st.caption(details)
         
         with col2:
-            st.markdown(f"**{int(progress * 100)}%**")
+            _ = st.markdown(f"**{int(progress * 100)}%**")
         
-        return progress_bar
     
     def show_spinner(
         self,
         message: str = "Processing...",
-        key: Optional[str] = None
+        key: str | None = None
     ) -> Any:
         """
         Display loading spinner.
@@ -862,7 +857,7 @@ class ProgressIndicators:
         """
         return st.spinner(message)
     
-    def show_generation_steps(self) -> Dict[str, Any]:
+    def show_generation_steps(self) -> dict[str, Any]:
         """
         Display step-by-step generation progress.
         
@@ -891,11 +886,11 @@ class ProgressIndicators:
     
     def update_step(
         self,
-        steps: Dict[str, Any],
+        steps: dict[str, Any],
         step_name: str,
         status: str,
         message: str,
-        details: Optional[str] = None
+        details: str | None = None
     ) -> None:
         """
         Update a specific generation step.
@@ -930,7 +925,7 @@ class ProgressIndicators:
         self,
         message: str,
         type: str = "info",
-        icon: Optional[str] = None
+        icon: str | None = None
     ) -> None:
         """
         Display notification message.
@@ -954,7 +949,7 @@ class ProgressIndicators:
     
     def show_debug_info(
         self,
-        data: Dict[str, Any],
+        data: dict[str, Any],
         title: str = "Debug Information"
     ) -> None:
         """
@@ -982,7 +977,7 @@ class ProgressIndicators:
                 )
             with col2:
                 if st.button("📊 Show Error Statistics"):
-                    from ui.error_display import ErrorDisplayManager
+                    from ..ui.error_display import ErrorDisplayManager
                     ErrorDisplayManager.show_error_dashboard()
     
     def show_rate_limit_status(
@@ -1043,7 +1038,7 @@ class ProgressIndicators:
         self,
         attempt: int,
         max_attempts: int = 3,
-        error: Optional[str] = None
+        error: str | None = None
     ) -> None:
         """
         Display retry attempt status.
@@ -1140,10 +1135,10 @@ class ProgressIndicators:
     
     def update_status_container(
         self,
-        container: Dict[str, Any],
+        container: dict[str, Any],
         status: str,
         progress: float = 0.0,
-        details: Optional[str] = None
+        details: str | None = None
     ) -> None:
         """
         Update status container with new information.
@@ -1165,7 +1160,7 @@ class ProgressIndicators:
         self,
         error: Exception,
         show_traceback: bool = False,
-        context: Optional[str] = None
+        context: str | None = None
     ) -> None:
         """
         Display error details with optional troubleshooting information.
@@ -1210,7 +1205,7 @@ class ProgressIndicators:
     def show_error_recovery_options(
         self,
         error_type: str,
-        recovery_action: Optional[Callable] = None
+        recovery_action: Callable[[], None] | None = None
     ) -> None:
         """
         Show error recovery options with action buttons.
@@ -1238,7 +1233,7 @@ class ProgressIndicators:
             if st.button("🔧 Reset Session"):
                 # Clear any cached data
                 for key in list(st.session_state.keys()):
-                    if key.startswith(('generation_', 'current_', 'error_')):
+                    if isinstance(key, str) and key.startswith(('generation_', 'current_', 'error_')):
                         del st.session_state[key]
                 st.success("✅ Session reset")
                 st.rerun()
@@ -1291,8 +1286,8 @@ class ProgressIndicators:
         operation: str,
         status: str,
         progress: float = 0.0,
-        details: Optional[str] = None,
-        error: Optional[Exception] = None
+        details: str | None = None,
+        error: Exception | None = None
     ) -> None:
         """
         Show comprehensive operation status with error handling.
