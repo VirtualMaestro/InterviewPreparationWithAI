@@ -4,14 +4,14 @@ Error display components for the Interview Prep Application UI.
 Provides user-friendly error display, debugging information, and error recovery options.
 """
 
-import streamlit as st
-import traceback
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any
+from datetime import datetime
+from typing import Callable
 
-from utils.error_handler import (
-    ErrorRecord, 
-    ErrorCategory, 
+import streamlit as st
+
+from ..utils.error_handler import (
+    ErrorRecord,
+    ErrorCategory,
     ErrorSeverity,
     global_error_handler
 )
@@ -142,7 +142,8 @@ class ErrorDisplayManager:
                     "Stack Trace",
                     value=error_record.stack_trace,
                     height=200,
-                    help="Technical error details for debugging"
+                    help="Technical error details for debugging",
+                    key=f"stack_trace_{error_record.error_id}"
                 )
     
     @staticmethod
@@ -277,7 +278,7 @@ class ErrorDisplayManager:
             error: The exception that occurred
             context: Context description for the error
         """
-        from utils.error_handler import ErrorContext
+        from ..utils.error_handler import ErrorContext
         
         error_context = ErrorContext(
             operation=context,
@@ -304,7 +305,7 @@ class ErrorDisplayManager:
     @staticmethod
     def create_error_recovery_button(
         error_record: ErrorRecord,
-        recovery_action: callable,
+        recovery_action: Callable[[], bool],
         button_text: str = "🔄 Try Again"
     ) -> None:
         """
@@ -363,7 +364,7 @@ def show_network_error() -> None:
     """)
 
 
-def show_rate_limit_error(retry_after: Optional[int] = None) -> None:
+def show_rate_limit_error(retry_after: int | None = None) -> None:
     """Show rate limit error with countdown."""
     if retry_after:
         st.warning(f"⏱️ Rate limit reached. Please wait {retry_after} seconds.")
