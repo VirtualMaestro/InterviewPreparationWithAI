@@ -4,7 +4,7 @@ Provides model-specific pricing, token-based cost breakdown, and cumulative trac
 """
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 
 
 @dataclass
@@ -29,6 +29,11 @@ class CostCalculator:
             input_cost_per_1k_tokens=0.0025,   # $2.50 per 1M tokens
             output_cost_per_1k_tokens=0.010,   # $10.00 per 1M tokens
             model_name="gpt-4o"
+        ),
+        "gpt-4o-mini": ModelPricing(
+            input_cost_per_1k_tokens=0.00015,  # $0.15 per 1M tokens
+            output_cost_per_1k_tokens=0.0006,  # $0.60 per 1M tokens
+            model_name="gpt-4o-mini"
         ),
         "gpt-5": ModelPricing(
             # $5.00 per 1M tokens (estimated)
@@ -128,7 +133,7 @@ class CostCalculator:
 
         return cost_breakdown
 
-    def get_cumulative_stats(self) -> Dict[str, any]:
+    def get_cumulative_stats(self) -> Dict[str, Any]:
         """
         Get cumulative usage statistics.
 
@@ -164,7 +169,7 @@ class CostCalculator:
         self.session_count = 0
         self.last_reset = datetime.now()
 
-    def get_model_pricing_info(self, model: Optional[str] = None) -> Dict[str, any]:
+    def get_model_pricing_info(self, model: Optional[str] = None) -> Dict[str, Any]:
         """
         Get pricing information for models.
 

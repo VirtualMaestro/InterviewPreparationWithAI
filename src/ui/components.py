@@ -5,14 +5,15 @@ This module provides reusable UI components for the interview preparation
 application, including input forms, display components, and status indicators.
 """
 
-from typing import List, Any, Callable
+from typing import Any, Callable
 from dataclasses import dataclass
 from datetime import datetime
 
 import streamlit as st
+from streamlit.delta_generator import DeltaGenerator
 from ..utils.cost import cost_calculator
 from ..utils.error_handler import global_error_handler, ErrorContext
-from ..ui.error_display import ErrorDisplayManager
+from .error_display import ErrorDisplayManager
 
 from ..models.enums import (
     InterviewType,
@@ -49,7 +50,7 @@ class InputComponents:
     def __init__(self):
         """Initialize input components."""
         self.security = SecurityValidator()
-        self.min_description_length = 20
+        self.min_description_length = 10
         self.max_description_length = 5000
     
     def render_job_description(self, key: str = "job_description") -> tuple[str, bool, str | None]:
@@ -105,12 +106,15 @@ class InputComponents:
                 error_message = validation_result.warnings[0] if validation_result.warnings else "Security validation failed"
                 _ = st.error(f"🔒 Security: {error_message}")
             
-            # Character count
+            # Character count - always show
             char_count = len(job_description)
             if is_valid:
                 st.success(f"✅ Valid input ({char_count}/{self.max_description_length} characters)")
             else:
                 st.info(f"📊 {char_count}/{self.max_description_length} characters")
+        else:
+            # Show character count even for empty input
+            st.info(f"📊 0/{self.max_description_length} characters")
         
         return job_description, is_valid, error_message
     
@@ -377,25 +381,33 @@ class InputComponents:
             # Cost estimation
             st.markdown("### 💰 Cost Estimation")
             
-            # Get pricing info
-            pricing = cost_calculator.get_model_pricing_info(ai_model.value)
-            
-            if pricing:
-                # Estimate tokens (rough approximation)
-                estimated_input_tokens = len(focus_areas or "") * 2 if focus_areas else 500
-                estimated_output_tokens = question_count * 100  # ~100 tokens per question
+            try:
+                # Get pricing info with error handling
+                pricing = cost_calculator.get_model_pricing_info(ai_model.value)
                 
-                estimated_cost = cost_calculator.calculate_cost(
-                    ai_model.value,
-                    estimated_input_tokens,
-                    estimated_output_tokens
-                )
-                
-                st.info(f"""
-                **Estimated Cost**: ${estimated_cost['total_cost']:.4f}
-                - Input: ~{estimated_input_tokens} tokens (${estimated_cost['input_cost']:.4f})
-                - Output: ~{estimated_output_tokens} tokens (${estimated_cost['output_cost']:.4f})
-                """)
+                if pricing:
+                    # Estimate tokens (more comprehensive approximation)
+                    job_desc_tokens = len(st.session_state.get('job_description', '')) // 4  # ~4 chars per token
+                    focus_tokens = len(focus_areas or "") // 4 if focus_areas else 0
+                    base_prompt_tokens = 200  # Base prompt overhead
+                    estimated_input_tokens = job_desc_tokens + focus_tokens + base_prompt_tokens
+                    estimated_output_tokens = question_count * 100  # ~100 tokens per question
+                    
+                    estimated_cost = cost_calculator.calculate_cost(
+                        ai_model.value,
+                        estimated_input_tokens,
+                        estimated_output_tokens
+                    )
+                    
+                    st.info(f"""
+                    **Estimated Cost**: ${estimated_cost['total_cost']:.4f}
+                    - Input: ~{estimated_input_tokens} tokens (${estimated_cost['input_cost']:.4f})
+                    - Output: ~{estimated_output_tokens} tokens (${estimated_cost['output_cost']:.4f})
+                    """)
+                else:
+                    st.warning("⚠️ Pricing information not available for this model")
+            except Exception as e:
+                st.warning(f"⚠️ Cost estimation unavailable: {str(e)}")
             
             return {
                 "ai_model": ai_model,
@@ -483,8 +495,8 @@ class ResultsDisplay:
     
     def render_questions(
         self,
-        questions: List[str],
-        metadata: List[dict[str, Any]] | None = None
+        questions: list[str],
+        metadata: list[dict[str, Any]] | None = None
     ) -> None:
         """
         Render interview questions with formatting.
@@ -502,12 +514,12 @@ class ResultsDisplay:
         # Display questions in an organized format
         for i, question in enumerate(questions, 1):
             # Create expandable section for each question
-            with st.expander(f"Question {i}", expanded=True):
+            with st.expander(f"Question {i}", expanded=(i <= 3)):  # Only expand first 3 questions
                 # Display the question
                 st.markdown(f"**{question}**")
                 
                 # Add metadata if available
-                if metadata and isinstance(metadata, list) and i <= len(metadata):
+                if metadata and isinstance(metadata, list) and i - 1 < len(metadata):
                     q_meta = metadata[i-1]
                     
                     col1, col2, col3 = st.columns(3)
@@ -606,7 +618,7 @@ class ResultsDisplay:
     
     def render_recommendations(
         self,
-        recommendations: List[str]
+        recommendations: list[str]
     ) -> None:
         """
         Render preparation recommendations.
@@ -681,8 +693,8 @@ class ResultsDisplay:
     
     def render_export_options(
         self,
-        questions: List[str],
-        recommendations: List[str],
+        questions: list[str],
+        recommendations: list[str],
         session_data: dict[str, Any]
     ) -> None:
         """
@@ -734,8 +746,8 @@ class ResultsDisplay:
     
     def _format_as_text(
         self,
-        questions: List[str],
-        recommendations: List[str],
+        questions: list[str],
+        recommendations: list[str],
         session_data: dict[str, Any]
     ) -> str:
         """Format results as plain text."""
@@ -759,8 +771,8 @@ Technique: {session_data.get('technique', 'N/A')}
     
     def _format_as_markdown(
         self,
-        questions: List[str],
-        recommendations: List[str],
+        questions: list[str],
+        recommendations: list[str],
         session_data: dict[str, Any]
     ) -> str:
         """Format results as markdown."""
@@ -886,7 +898,7 @@ class ProgressIndicators:
     
     def update_step(
         self,
-        steps: dict[str, Any],
+        steps: dict[str, DeltaGenerator],
         step_name: str,
         status: str,
         message: str,
@@ -924,7 +936,7 @@ class ProgressIndicators:
     def show_notification(
         self,
         message: str,
-        type: str = "info",
+        notification_type: str = "info",
         icon: str | None = None
     ) -> None:
         """
@@ -932,17 +944,17 @@ class ProgressIndicators:
         
         Args:
             message: Notification message
-            type: Type ('success', 'info', 'warning', 'error')
+            notification_type: Type ('success', 'info', 'warning', 'error')
             icon: Optional emoji icon
         """
         if icon:
             message = f"{icon} {message}"
         
-        if type == "success":
+        if notification_type == "success":
             st.success(message)
-        elif type == "warning":
+        elif notification_type == "warning":
             st.warning(message)
-        elif type == "error":
+        elif notification_type == "error":
             st.error(message)
         else:
             st.info(message)
@@ -969,7 +981,7 @@ class ProgressIndicators:
             # Add copy button and error statistics
             col1, col2 = st.columns(2)
             with col1:
-                st.download_button(
+                _ = st.download_button(
                     label="📋 Copy Debug Info",
                     data=formatted,
                     file_name="debug_info.json",
@@ -977,7 +989,6 @@ class ProgressIndicators:
                 )
             with col2:
                 if st.button("📊 Show Error Statistics"):
-                    from ..ui.error_display import ErrorDisplayManager
                     ErrorDisplayManager.show_error_dashboard()
     
     def show_rate_limit_status(
@@ -994,32 +1005,32 @@ class ProgressIndicators:
             reset_time: Time until reset in seconds
             max_calls: Maximum calls allowed
         """
-        st.markdown("### 🚦 Rate Limit Status")
+        _ = st.markdown("### 🚦 Rate Limit Status")
         
         col1, col2, col3 = st.columns(3)
         
         with col1:
             # Progress bar for remaining calls
             progress = remaining_calls / max_calls
-            st.metric(
+            _ = st.metric(
                 label="Remaining Calls",
                 value=f"{remaining_calls}/{max_calls}",
                 delta=None
             )
-            st.progress(progress)
+            _ = st.progress(progress)
         
         with col2:
             # Time until reset
             if reset_time > 0:
                 minutes = int(reset_time // 60)
                 seconds = int(reset_time % 60)
-                st.metric(
+                _ = st.metric(
                     label="Reset In",
                     value=f"{minutes}m {seconds}s",
                     delta=None
                 )
             else:
-                st.metric(
+                _ = st.metric(
                     label="Reset In",
                     value="Ready",
                     delta=None
@@ -1028,11 +1039,11 @@ class ProgressIndicators:
         with col3:
             # Status indicator
             if remaining_calls > max_calls * 0.5:
-                st.success("✅ Healthy")
+                _ = st.success("✅ Healthy")
             elif remaining_calls > max_calls * 0.2:
-                st.warning("⚠️ Limited")
+                _ = st.warning("⚠️ Limited")
             else:
-                st.error("❌ Critical")
+                _ = st.error("❌ Critical")
     
     def show_retry_status(
         self,
@@ -1048,24 +1059,24 @@ class ProgressIndicators:
             max_attempts: Maximum attempts allowed
             error: Optional error message from last attempt
         """
-        st.markdown(f"### 🔄 Retry Attempt {attempt}/{max_attempts}")
+        _ = st.markdown(f"### 🔄 Retry Attempt {attempt}/{max_attempts}")
         
         # Progress bar
         progress = attempt / max_attempts
-        st.progress(progress)
+        _ = st.progress(progress)
         
         # Error from last attempt
         if error:
-            st.warning(f"Previous attempt failed: {error}")
+            _ = st.warning(f"Previous attempt failed: {error}")
         
         # Remaining attempts
         remaining = max_attempts - attempt
         if remaining > 0:
-            st.info(f"📊 {remaining} attempts remaining")
+            _ = st.info(f"📊 {remaining} attempts remaining")
         else:
-            st.error("❌ No attempts remaining")
+            _ = st.error("❌ No attempts remaining")
     
-    def _get_error_suggestions(self, error: Exception) -> List[str]:
+    def _get_error_suggestions(self, error: Exception) -> list[str]:
         """
         Get suggestions based on error type.
         
@@ -1075,10 +1086,9 @@ class ProgressIndicators:
         Returns:
             List of suggestion strings
         """
-        error_type = type(error).__name__
         error_msg = str(error).lower()
         
-        suggestions = []
+        suggestions: list[str] = []
         
         # API key errors
         if "api" in error_msg and "key" in error_msg:
@@ -1112,7 +1122,7 @@ class ProgressIndicators:
         
         return suggestions
     
-    def create_status_container(self) -> Any:
+    def create_status_container(self) -> dict[str, DeltaGenerator]:
         """
         Create a container for dynamic status updates.
         
@@ -1121,7 +1131,7 @@ class ProgressIndicators:
         """
         container = st.container()
         with container:
-            st.markdown("### 📊 Status")
+            _ = st.markdown("### 📊 Status")
             status_placeholder = st.empty()
             progress_placeholder = st.empty()
             details_placeholder = st.empty()
@@ -1135,7 +1145,7 @@ class ProgressIndicators:
     
     def update_status_container(
         self,
-        container: dict[str, Any],
+        container: dict[str, DeltaGenerator],
         status: str,
         progress: float = 0.0,
         details: str | None = None
@@ -1176,7 +1186,7 @@ class ProgressIndicators:
             additional_info={"ui_component": "progress_indicators"}
         )
         
-        recovery_successful, user_message, recovery_result = global_error_handler.handle_error(
+        _, _, _ = global_error_handler.handle_error(
             error, error_context, attempt_recovery=False
         )
         
