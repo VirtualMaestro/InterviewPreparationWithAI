@@ -235,7 +235,8 @@ class InputComponents:
             with col1:
                 # Model selection
                 model_options = {
-                    "GPT-4o (Recommended)": AIModel.GPT_4O,
+                    "GPT-5 (Recommended)": AIModel.GPT_5,
+                    "GPT-4o": AIModel.GPT_4O,
                     "GPT-4o Mini (Faster/Cheaper)": AIModel.GPT_4O_MINI
                 }
                 
@@ -251,6 +252,7 @@ class InputComponents:
                 
                 # Display model info
                 model_info = {
+                    AIModel.GPT_5: "Latest model with superior performance",
                     AIModel.GPT_4O: "Balanced performance and cost",
                     AIModel.GPT_4O_MINI: "Faster and more cost-effective"
                 }
@@ -602,8 +604,8 @@ class ResultsDisplay:
                 st.markdown(f"""
                 - **Total Sessions**: {cumulative_stats['session_count']}
                 - **Total Cost**: ${cumulative_stats['total_cost']:.4f}
-                - **Average Cost**: ${cumulative_stats['average_cost']:.4f}
-                - **Total Tokens**: {cumulative_stats['total_tokens']:,}
+                - **Average Cost**: ${cumulative_stats['average_cost_per_session']:.4f}
+                - **Total Tokens**: {(cumulative_stats['total_input_tokens'] + cumulative_stats['total_output_tokens']):,}
                 """)
     
     def render_recommendations(
@@ -950,37 +952,6 @@ class ProgressIndicators:
         else:
             st.info(message)
     
-    def show_error_details(
-        self,
-        error: Exception,
-        show_traceback: bool = False
-    ) -> None:
-        """
-        Display detailed error information.
-        
-        Args:
-            error: Exception object
-            show_traceback: Whether to show full traceback
-        """
-        st.markdown("### ❌ Error Details")
-        
-        # Basic error info
-        st.error(f"**Error Type**: {type(error).__name__}")
-        st.error(f"**Message**: {str(error)}")
-        
-        # Suggestions based on error type
-        suggestions = self._get_error_suggestions(error)
-        if suggestions:
-            st.markdown("### 💡 Suggestions")
-            for suggestion in suggestions:
-                st.info(f"• {suggestion}")
-        
-        # Traceback in expander
-        if show_traceback:
-            import traceback
-            with st.expander("🔍 Full Traceback", expanded=False):
-                st.code(traceback.format_exc())
-    
     def show_debug_info(
         self,
         data: Dict[str, Any],
@@ -1000,13 +971,19 @@ class ProgressIndicators:
             formatted = json.dumps(data, indent=2, default=str)
             st.code(formatted, language="json")
             
-            # Add copy button
-            st.download_button(
-                label="📋 Copy Debug Info",
-                data=formatted,
-                file_name="debug_info.json",
-                mime="application/json"
-            )
+            # Add copy button and error statistics
+            col1, col2 = st.columns(2)
+            with col1:
+                st.download_button(
+                    label="📋 Copy Debug Info",
+                    data=formatted,
+                    file_name="debug_info.json",
+                    mime="application/json"
+                )
+            with col2:
+                if st.button("📊 Show Error Statistics"):
+                    from ui.error_display import ErrorDisplayManager
+                    ErrorDisplayManager.show_error_dashboard()
     
     def show_rate_limit_status(
         self,
@@ -1229,19 +1206,6 @@ class ProgressIndicators:
                 "timestamp": datetime.now().isoformat()
             })
     
-    def show_debug_info(self, debug_data: Dict[str, Any]) -> None:
-        """
-        Display debug information in an expandable section.
-        
-        Args:
-            debug_data: Dictionary of debug information to display
-        """
-        with st.expander("🐛 Debug Information", expanded=False):
-            st.json(debug_data)
-            
-            # Show error statistics
-            if st.button("📊 Show Error Statistics"):
-                ErrorDisplayManager.show_error_dashboard()
     
     def show_error_recovery_options(
         self,

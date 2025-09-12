@@ -48,5 +48,6 @@ class QuestionCategory(Enum):
 
 class AIModel(Enum):
     """Available AI models for generation"""
+    GPT_5 = "gpt-5"
     GPT_4O = "gpt-4o"
     GPT_4O_MINI = "gpt-4o-mini"

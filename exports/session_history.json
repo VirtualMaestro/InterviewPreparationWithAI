@@ -1,6 +1,362 @@
 {
   "history": [
     {
+      "session_id": "c82e6502",
+      "timestamp": "2025-09-12T10:17:03.433644",
+      "input_config": {
+        "job_description": "A senior Python developer leads the design, development, and maintenance of robust, scalable Python ...",
+        "interview_type": "Technical Questions",
+        "experience_level": "Mid-level (3-5 years)",
+        "prompt_technique": "Structured Output",
+        "question_count": 5,
+        "temperature": 0.7,
+        "company_type": "FAANG",
+        "ai_model": "gpt-5"
+      },
+      "questions": [
+        "Design a simple caching system for a web application. What data structures would you use and how would you handle cache invalidation?",
+        "Implement a function in Python to merge two sorted lists into a single sorted list. What is the time complexity of your solution?",
+        "Discuss the differences between multithreading and multiprocessing in Python. When would you prefer one over the other?",
+        "Explain how you would optimize a Python script that processes large amounts of data. What techniques would you consider?"
+      ],
+      "recommendations": [
+        {
+          "category": "system_design",
+          "recommendation": "Practice designing scalable systems with caching layers",
+          "priority": "high",
+          "resources": [
+            "System design interviews",
+            "Redis documentation",
+            "Caching patterns"
+          ]
+        },
+        {
+          "category": "coding",
+          "recommendation": "Improve coding skills with a focus on algorithms and data structures",
+          "priority": "medium",
+          "resources": [
+            "LeetCode",
+            "HackerRank",
+            "Cracking the Coding Interview"
+          ]
+        },
+        {
+          "category": "conceptual",
+          "recommendation": "Deepen understanding of Python's concurrency models",
+          "priority": "medium",
+          "resources": [
+            "Python's official documentation",
+            "Real Python tutorials",
+            "Concurrency in Python by Example"
+          ]
+        },
+        {
+          "category": "optimization",
+          "recommendation": "Learn about Python's memory management and optimization techniques",
+          "priority": "high",
+          "resources": [
+            "Python Memory Management: A Primer",
+            "Effective Python",
+            "Python Performance Tips"
+          ]
+        }
+      ],
+      "cost_breakdown": {
+        "input_cost": 0.001653,
+        "output_cost": 0.00866,
+        "total_cost": 0.010313
+      },
+      "metadata": {
+        "session_number": 5,
+        "api_key_used": true,
+        "technique_used": "Structured Output",
+        "model_used": "gpt-4o",
+        "timestamp": "2025-09-12T10:17:19.985432",
+        "technique": "Structured Output",
+        "template_name": "structured_output_technical_mid",
+        "tokens_used": 1527,
+        "finish_reason": "stop",
+        "total_questions": 4,
+        "difficulty_distribution": {
+          "easy": 20,
+          "medium": 60,
+          "hard": 20
+        },
+        "estimated_total_time": 45,
+        "focus_areas": [
+          "system_design",
+          "optimization",
+          "decision_making",
+          "best_practices"
+        ],
+        "preparation_level": "intermediate",
+        "interview_type": "Technical Questions",
+        "experience_level": "Mid-level (3-5 years)"
+      },
+      "error": null,
+      "success": true
+    },
+    {
+      "session_id": "48400f69",
+      "timestamp": "2025-09-12T10:00:50.329824",
+      "input_config": {
+        "job_description": "A senior Python developer leads the design, development, and maintenance of robust, scalable Python ...",
+        "interview_type": "Technical Questions",
+        "experience_level": "Mid-level (3-5 years)",
+        "prompt_technique": "Structured Output",
+        "question_count": 5,
+        "temperature": 0.7,
+        "company_type": null,
+        "ai_model": "gpt-4o"
+      },
+      "questions": [
+        "Design a simple caching system for a web application. What data structures would you use and how would you handle cache invalidation?",
+        "Write a Python function to detect if a linked list has a cycle. Explain your approach.",
+        "Explain the concept of decorators in Python and provide an example of how you would use them in a real-world application.",
+        "Design a RESTful API for a library management system. What endpoints would you include and why?",
+        "Optimize a Python function that processes a large dataset. Explain the steps you would take."
+      ],
+      "recommendations": [
+        {
+          "category": "system_design",
+          "recommendation": "Practice designing scalable systems with caching layers",
+          "priority": "high",
+          "resources": [
+            "System design interviews",
+            "Redis documentation",
+            "Caching patterns"
+          ]
+        },
+        {
+          "category": "algorithms",
+          "recommendation": "Review common algorithms and data structures",
+          "priority": "medium",
+          "resources": [
+            "LeetCode",
+            "Cracking the Coding Interview",
+            "Algorithm design manuals"
+          ]
+        },
+        {
+          "category": "conceptual",
+          "recommendation": "Deepen understanding of Python features like decorators and context managers",
+          "priority": "medium",
+          "resources": [
+            "Python official documentation",
+            "Real Python tutorials",
+            "Effective Python book"
+          ]
+        },
+        {
+          "category": "optimization",
+          "recommendation": "Learn Python optimization techniques and tools",
+          "priority": "high",
+          "resources": [
+            "Profiling Python applications",
+            "PyPy documentation",
+            "Python Performance Tips"
+          ]
+        }
+      ],
+      "cost_breakdown": {
+        "input_cost": 0.001653,
+        "output_cost": 0.00974,
+        "total_cost": 0.011393
+      },
+      "metadata": {
+        "session_number": 4,
+        "api_key_used": true,
+        "technique_used": "Structured Output",
+        "model_used": "gpt-4o",
+        "timestamp": "2025-09-12T10:01:03.887044",
+        "technique": "Structured Output",
+        "template_name": "structured_output_technical_mid",
+        "tokens_used": 1635,
+        "finish_reason": "stop",
+        "total_questions": 5,
+        "difficulty_distribution": {
+          "easy": 20,
+          "medium": 60,
+          "hard": 20
+        },
+        "estimated_total_time": 58,
+        "focus_areas": [
+          "system_design",
+          "optimization",
+          "decision_making",
+          "best_practices"
+        ],
+        "preparation_level": "intermediate",
+        "interview_type": "Technical Questions",
+        "experience_level": "Mid-level (3-5 years)"
+      },
+      "error": null,
+      "success": true
+    },
+    {
+      "session_id": "ebf858a2",
+      "timestamp": "2025-09-12T10:00:26.127841",
+      "input_config": {
+        "job_description": "A senior Python developer leads the design, development, and maintenance of robust, scalable Python ...",
+        "interview_type": "Technical Questions",
+        "experience_level": "Mid-level (3-5 years)",
+        "prompt_technique": "Structured Output",
+        "question_count": 5,
+        "temperature": 0.7,
+        "company_type": null,
+        "ai_model": "gpt-4o"
+      },
+      "questions": [
+        "Design a simple caching system for a web application. What data structures would you use and how would you handle cache invalidation?",
+        "Implement a function in Python to find the nth Fibonacci number using memoization. Discuss the time complexity.",
+        "Explain the differences between threading and multiprocessing in Python. In what scenarios would you choose one over the other?",
+        "Discuss how you would design a logging system for a Python application to handle different log levels and outputs.",
+        "You are given a list of integers. Write a Python function to find the maximum product of two integers in the list."
+      ],
+      "recommendations": [
+        {
+          "category": "system_design",
+          "recommendation": "Practice designing scalable systems with caching layers",
+          "priority": "high",
+          "resources": [
+            "System design interviews",
+            "Redis documentation",
+            "Caching patterns"
+          ]
+        },
+        {
+          "category": "coding",
+          "recommendation": "Enhance coding skills with a focus on algorithms and data structures",
+          "priority": "medium",
+          "resources": [
+            "LeetCode",
+            "Cracking the Coding Interview",
+            "Python documentation"
+          ]
+        },
+        {
+          "category": "conceptual",
+          "recommendation": "Understand Python's threading and multiprocessing models and their implications",
+          "priority": "high",
+          "resources": [
+            "Python's official documentation",
+            "Real Python articles",
+            "Concurrency in Python"
+          ]
+        }
+      ],
+      "cost_breakdown": {
+        "input_cost": 0.001653,
+        "output_cost": 0.00932,
+        "total_cost": 0.010973
+      },
+      "metadata": {
+        "session_number": 3,
+        "api_key_used": true,
+        "technique_used": "Structured Output",
+        "model_used": "gpt-4o",
+        "timestamp": "2025-09-12T10:00:38.826181",
+        "technique": "Structured Output",
+        "template_name": "structured_output_technical_mid",
+        "tokens_used": 1593,
+        "finish_reason": "stop",
+        "total_questions": 5,
+        "difficulty_distribution": {
+          "easy": 20,
+          "medium": 60,
+          "hard": 20
+        },
+        "estimated_total_time": 55,
+        "focus_areas": [
+          "system_design",
+          "optimization",
+          "decision_making",
+          "best_practices"
+        ],
+        "preparation_level": "intermediate",
+        "interview_type": "Technical Questions",
+        "experience_level": "Mid-level (3-5 years)"
+      },
+      "error": null,
+      "success": true
+    },
+    {
+      "session_id": "bffaa943",
+      "timestamp": "2025-09-12T09:52:06.521239",
+      "input_config": {
+        "job_description": "A senior Python developer leads the design, development, and maintenance of robust, scalable Python ...",
+        "interview_type": "Technical Questions",
+        "experience_level": "Mid-level (3-5 years)",
+        "prompt_technique": "Structured Output",
+        "question_count": 5,
+        "temperature": 0.7,
+        "company_type": "FAANG",
+        "ai_model": "gpt-4o"
+      },
+      "questions": [
+        "Design a simple caching system for a web application. What data structures would you use and how would you handle cache invalidation?",
+        "Explain the differences between a list and a tuple in Python. In what scenarios would you use each?",
+        "Write a Python function to find the longest substring without repeating characters in a given string.",
+        "Discuss how you would approach debugging a performance issue in a large Python application."
+      ],
+      "recommendations": [
+        {
+          "category": "system_design",
+          "recommendation": "Practice designing scalable systems with caching layers",
+          "priority": "high",
+          "resources": [
+            "System design interviews",
+            "Redis documentation",
+            "Caching patterns"
+          ]
+        },
+        {
+          "category": "optimization",
+          "recommendation": "Familiarize yourself with Python profiling tools to identify performance bottlenecks",
+          "priority": "high",
+          "resources": [
+            "cProfile documentation",
+            "PyCharm profiling features",
+            "Optimization case studies"
+          ]
+        }
+      ],
+      "cost_breakdown": {
+        "input_cost": 0.001653,
+        "output_cost": 0.00744,
+        "total_cost": 0.009093
+      },
+      "metadata": {
+        "session_number": 2,
+        "api_key_used": true,
+        "technique_used": "Structured Output",
+        "model_used": "gpt-4o",
+        "timestamp": "2025-09-12T09:52:19.406958",
+        "technique": "Structured Output",
+        "template_name": "structured_output_technical_mid",
+        "tokens_used": 1405,
+        "finish_reason": "stop",
+        "total_questions": 4,
+        "difficulty_distribution": {
+          "easy": 20,
+          "medium": 60,
+          "hard": 20
+        },
+        "estimated_total_time": 50,
+        "focus_areas": [
+          "system_design",
+          "optimization",
+          "decision_making",
+          "best_practices"
+        ],
+        "preparation_level": "intermediate",
+        "interview_type": "Technical Questions",
+        "experience_level": "Mid-level (3-5 years)"
+      },
+      "error": null,
+      "success": true
+    },
+    {
       "session_id": "c3583b8c",
       "timestamp": "2025-09-11T17:58:05.264086",
       "input_config": {
@@ -24,7 +380,7 @@
       "success": false
     }
   ],
-  "total_cost": 0.0,
+  "total_cost": 0.041772000000000004,
   "total_tokens": 0,
-  "session_count": 1
+  "session_count": 5
 }
