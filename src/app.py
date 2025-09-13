@@ -10,20 +10,19 @@ from typing import Optional, Dict, Any
 import os
 from datetime import datetime
 
-from models.simple_schemas import GenerationRequest
-from ai.generator import InterviewQuestionGenerator
-from ui.components import input_components, results_display, progress_indicators
-from ui.session import session_manager
-from utils.security import SecurityValidator
-from utils.error_handler import (
+from .models.simple_schemas import GenerationRequest, AISettings
+from .ai.generator import InterviewQuestionGenerator
+from .ui.components import input_components, results_display, progress_indicators
+from .ui.session import session_manager
+from .utils.security import SecurityValidator
+from .utils.error_handler import (
     global_error_handler, 
     handle_errors, 
     handle_async_errors,
     ErrorContext,
-    ConfigurationError,
-    ErrorCategory
+    ConfigurationError
 )
-from config import Config
+from .config import Config
 
 
 class InterviewPrepApp:
@@ -210,17 +209,24 @@ class InterviewPrepApp:
                 question_count=config.question_count
             )
             
-            # Add optional attributes
-            if config.company_type or config.focus_areas or config.persona:
-                generation_request.additional_context = {}
-                if config.company_type:
-                    generation_request.additional_context['company_type'] = config.company_type
-                if config.focus_areas:
-                    generation_request.additional_context['focus_areas'] = config.focus_areas
-                if config.persona:
-                    generation_request.additional_context['persona'] = config.persona
+            # Set AI settings including temperature
+            if not generation_request.ai_settings:
+                generation_request.ai_settings = AISettings()
             
-            generation_request.temperature = config.temperature
+            generation_request.ai_settings.temperature = config.temperature
+            
+            # Handle additional context through alternative means
+            # Since GenerationRequest doesn't have additional_context attribute,
+            # we'll need to pass this information through the generator method parameters
+            # or modify the schema to include these fields
+            additional_context = {}
+            if config.company_type or config.focus_areas or config.persona:
+                if config.company_type:
+                    additional_context['company_type'] = config.company_type
+                if config.focus_areas:
+                    additional_context['focus_areas'] = config.focus_areas
+                if config.persona:
+                    additional_context['persona'] = config.persona
             
             # Create session
             session = session_manager.create_session(
@@ -242,6 +248,9 @@ class InterviewPrepApp:
                 progress_callback("generating", 0.3, "Generating questions with AI...")
             
             # Generate questions
+            if not self.generator:
+                raise Exception("Generator not initialized - API key validation may have failed")
+            
             result = await self.generator.generate_questions(
                 generation_request,
                 preferred_technique=config.prompt_technique
@@ -281,12 +290,36 @@ class InterviewPrepApp:
                 }
             }
             
-            # Update session
+            # Update session with type-safe extraction and validation
+            questions = results.get('questions', [])
+            recommendations = results.get('recommendations', [])
+            raw_cost_breakdown = results.get('cost_breakdown', {})
+            metadata = results.get('metadata', {})
+            
+            # Type validation and conversion
+            if not isinstance(questions, list) or not all(isinstance(q, str) for q in questions):
+                raise ValueError("Invalid questions format from AI generator")
+            if not isinstance(recommendations, list) or not all(isinstance(r, str) for r in recommendations):
+                raise ValueError("Invalid recommendations format from AI generator")
+            if not isinstance(metadata, dict):
+                raise ValueError("Invalid metadata format from AI generator")
+            
+            # Convert cost_breakdown to proper Dict[str, float] format
+            cost_breakdown: Dict[str, float] = {}
+            if isinstance(raw_cost_breakdown, dict):
+                for key, value in raw_cost_breakdown.items():
+                    if isinstance(key, str) and isinstance(value, (int, float)):
+                        cost_breakdown[key] = float(value)
+                    else:
+                        raise ValueError(f"Invalid cost breakdown entry: {key}={value}")
+            else:
+                raise ValueError("Invalid cost_breakdown format from AI generator")
+            
             session_manager.update_session_results(
-                questions=results['questions'],
-                recommendations=results['recommendations'],
-                cost_breakdown=results['cost_breakdown'],
-                metadata=results['metadata']
+                questions=questions,
+                recommendations=recommendations,
+                cost_breakdown=cost_breakdown,
+                metadata=metadata
             )
             
             # Update progress
@@ -417,7 +450,7 @@ class InterviewPrepApp:
             st.divider()
             
             # Error monitoring
-            from ui.error_display import ErrorDisplayManager
+            from .ui.error_display import ErrorDisplayManager
             ErrorDisplayManager.show_error_summary_widget()
             
             st.divider()
@@ -459,7 +492,7 @@ class InterviewPrepApp:
         if st.session_state.get('show_debug', False):
             progress_indicators.show_debug_info({
                 'session_state': {
-                    k: str(v)[:100] if not k.startswith('api_key') else '***'
+                    k: str(v)[:100] if isinstance(k, str) and not k.startswith('api_key') else '***'
                     for k, v in st.session_state.items()
                 },
                 'generator_ready': self.generator is not None,
@@ -497,33 +530,72 @@ class InterviewPrepApp:
             if st.session_state.get('show_results') and st.session_state.get('current_results'):
                 results = st.session_state.current_results
                 
+                # Type-safe extraction and validation for display
+                questions = results.get('questions', [])
+                recommendations = results.get('recommendations', [])
+                cost_breakdown = results.get('cost_breakdown', {})
+                metadata = results.get('metadata', {})
+                token_counts = results.get('token_counts')
+                
+                # Validate types for display functions
+                if not isinstance(questions, list) or not all(isinstance(q, str) for q in questions):
+                    st.error("Invalid questions format - cannot display results")
+                    return
+                    
+                if not isinstance(recommendations, list) or not all(isinstance(r, str) for r in recommendations):
+                    st.error("Invalid recommendations format - cannot display results")
+                    return
+                    
+                if not isinstance(cost_breakdown, dict):
+                    st.error("Invalid cost breakdown format - cannot display results")
+                    return
+                    
+                if not isinstance(metadata, dict):
+                    st.error("Invalid metadata format - cannot display results")
+                    return
+                
+                # Convert cost_breakdown to proper Dict[str, float] if needed
+                validated_cost_breakdown: Dict[str, float] = {}
+                for key, value in cost_breakdown.items():
+                    if isinstance(key, str) and isinstance(value, (int, float)):
+                        validated_cost_breakdown[key] = float(value)
+                
+                # Validate token_counts if present
+                validated_token_counts = None
+                if token_counts is not None:
+                    if isinstance(token_counts, dict):
+                        validated_token_counts = {
+                            k: int(v) for k, v in token_counts.items()
+                            if isinstance(k, str) and isinstance(v, (int, float))
+                        }
+                
                 # Display questions
                 results_display.render_questions(
-                    results['questions'],
-                    results.get('metadata', {}).get('questions_metadata')
+                    questions,
+                    metadata.get('questions_metadata')
                 )
                 
                 # Display cost metrics
                 results_display.render_cost_metrics(
-                    results['cost_breakdown'],
-                    results.get('token_counts')
+                    validated_cost_breakdown,
+                    validated_token_counts
                 )
                 
                 # Display recommendations
                 results_display.render_recommendations(
-                    results['recommendations']
+                    recommendations
                 )
                 
                 # Session metadata
                 results_display.render_session_metadata(
-                    results['metadata']
+                    metadata
                 )
                 
                 # Export options
                 results_display.render_export_options(
-                    results['questions'],
-                    results['recommendations'],
-                    results['metadata']
+                    questions,
+                    recommendations,
+                    metadata
                 )
             else:
                 st.info("No results to display. Generate questions in the Generate tab.")
@@ -566,7 +638,7 @@ class InterviewPrepApp:
         
         with tab4:
             # Error monitoring and debugging
-            from ui.error_display import ErrorDisplayManager
+            from .ui.error_display import ErrorDisplayManager
             ErrorDisplayManager.show_error_dashboard()
 
 

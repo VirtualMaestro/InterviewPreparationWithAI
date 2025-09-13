@@ -8,15 +8,10 @@ error messages for all major operations in the application.
 import logging
 import traceback
 import functools
-import asyncio
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional, Type, Union, Tuple
+from typing import Any, Callable
 from dataclasses import dataclass, field
 from enum import Enum
-
-# Application-specific imports
-from models.enums import InterviewType, ExperienceLevel, PromptTechnique
-
 
 class ErrorSeverity(Enum):
     """Error severity levels for categorization."""
@@ -45,10 +40,10 @@ class ErrorCategory(Enum):
 class ErrorContext:
     """Context information for error handling."""
     operation: str
-    user_id: Optional[str] = None
-    session_id: Optional[str] = None
-    request_data: Optional[Dict[str, Any]] = None
-    additional_info: Dict[str, Any] = field(default_factory=dict)
+    user_id: str | None = None
+    session_id: str | None = None
+    request_data: dict[str, Any] | None = None
+    additional_info: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -60,23 +55,23 @@ class ErrorRecord:
     category: ErrorCategory
     severity: ErrorSeverity
     context: ErrorContext
-    stack_trace: Optional[str] = None
+    stack_trace: str | None = None
     recovery_attempted: bool = False
     recovery_successful: bool = False
-    user_message: Optional[str] = None
-    error_id: Optional[str] = None
+    user_message: str | None = None
+    error_id: str | None = None
 
 
 class ApplicationError(Exception):
     """Base application error with enhanced context."""
     
     def __init__(
-        self, 
-        message: str, 
+        self,
+        message: str,
         category: ErrorCategory = ErrorCategory.UNKNOWN_ERROR,
         severity: ErrorSeverity = ErrorSeverity.MEDIUM,
-        context: Optional[ErrorContext] = None,
-        cause: Optional[Exception] = None
+        context: ErrorContext | None = None,
+        cause: Exception | None = None
     ):
         super().__init__(message)
         self.message = message
@@ -90,7 +85,7 @@ class ApplicationError(Exception):
 class ValidationError(ApplicationError):
     """Input validation errors."""
     
-    def __init__(self, message: str, field_name: Optional[str] = None, **kwargs):
+    def __init__(self, message: str, field_name: str | None = None, **kwargs):
         super().__init__(
             message, 
             category=ErrorCategory.VALIDATION_ERROR,
@@ -103,7 +98,7 @@ class ValidationError(ApplicationError):
 class APIError(ApplicationError):
     """API-related errors."""
     
-    def __init__(self, message: str, status_code: Optional[int] = None, **kwargs):
+    def __init__(self, message: str, status_code: int | None = None, **kwargs):
         super().__init__(
             message,
             category=ErrorCategory.API_ERROR,
@@ -116,7 +111,7 @@ class APIError(ApplicationError):
 class RateLimitError(ApplicationError):
     """Rate limiting errors."""
     
-    def __init__(self, message: str, retry_after: Optional[int] = None, **kwargs):
+    def __init__(self, message: str, retry_after: int | None = None, **kwargs):
         super().__init__(
             message,
             category=ErrorCategory.RATE_LIMIT_ERROR,
@@ -165,16 +160,16 @@ class ErrorHandler:
     def __init__(self, logger_name: str = "interview_prep"):
         """Initialize error handler with logger."""
         self.logger = logging.getLogger(logger_name)
-        self.error_history: List[ErrorRecord] = []
-        self.recovery_strategies: Dict[ErrorCategory, List[Callable]] = {}
+        self.error_history: list[ErrorRecord] = []
+        self.recovery_strategies: dict[ErrorCategory, list[Callable[..., Any]]] = {}
         self.user_message_templates = self._init_user_messages()
         
         # Error statistics
-        self.error_counts: Dict[ErrorCategory, int] = {
+        self.error_counts: dict[ErrorCategory, int] = {
             category: 0 for category in ErrorCategory
         }
         
-    def _init_user_messages(self) -> Dict[ErrorCategory, str]:
+    def _init_user_messages(self) -> dict[ErrorCategory, str]:
         """Initialize user-friendly error message templates."""
         return {
             ErrorCategory.API_ERROR: (
@@ -227,9 +222,9 @@ class ErrorHandler:
     def handle_error(
         self,
         error: Exception,
-        context: Optional[ErrorContext] = None,
+        context: ErrorContext | None = None,
         attempt_recovery: bool = True
-    ) -> Tuple[bool, Optional[str], Optional[Any]]:
+    ) -> tuple[bool, str | None, Any | None]:
         """
         Handle an error with comprehensive logging and recovery.
         
@@ -285,9 +280,9 @@ class ErrorHandler:
         return recovery_successful, user_message, recovery_result
     
     def _convert_to_app_error(
-        self, 
-        error: Exception, 
-        context: Optional[ErrorContext]
+        self,
+        error: Exception,
+        context: ErrorContext | None
     ) -> ApplicationError:
         """Convert any exception to an ApplicationError."""
         if isinstance(error, ApplicationError):
@@ -369,7 +364,7 @@ class ErrorHandler:
         )
         
         # Add specific details for certain error types
-        if app_error.category == ErrorCategory.RATE_LIMIT_ERROR and hasattr(app_error, 'retry_after'):
+        if app_error.category == ErrorCategory.RATE_LIMIT_ERROR and isinstance(app_error, RateLimitError):
             if app_error.retry_after:
                 base_message += f" Please wait {app_error.retry_after} seconds."
         
@@ -379,10 +374,10 @@ class ErrorHandler:
         return base_message
     
     def _attempt_recovery(
-        self, 
-        app_error: ApplicationError, 
+        self,
+        app_error: ApplicationError,
         record: ErrorRecord
-    ) -> Tuple[bool, Optional[Any]]:
+    ) -> tuple[bool, Any | None]:
         """Attempt automatic error recovery."""
         recovery_strategies = self.recovery_strategies.get(app_error.category, [])
         
@@ -402,14 +397,14 @@ class ErrorHandler:
     def register_recovery_strategy(
         self, 
         category: ErrorCategory, 
-        strategy: Callable
+        strategy: Callable[..., Any]
     ) -> None:
         """Register a recovery strategy for a specific error category."""
         if category not in self.recovery_strategies:
             self.recovery_strategies[category] = []
         self.recovery_strategies[category].append(strategy)
     
-    def get_error_statistics(self) -> Dict[str, Any]:
+    def get_error_statistics(self) -> dict[str, Any]:
         """Get comprehensive error statistics."""
         total_errors = sum(self.error_counts.values())
         
@@ -438,16 +433,16 @@ class ErrorHandler:
         successful_recoveries = [e for e in recovery_attempts if e.recovery_successful]
         return len(successful_recoveries) / len(recovery_attempts) * 100
     
-    def _get_most_common_errors(self, limit: int = 5) -> List[Tuple[str, int]]:
+    def _get_most_common_errors(self, limit: int = 5) -> list[tuple[str, int]]:
         """Get the most common error types."""
-        error_type_counts: Dict[str, int] = {}
+        error_type_counts: dict[str, int] = {}
         
         for record in self.error_history:
             error_type_counts[record.error_type] = error_type_counts.get(record.error_type, 0) + 1
         
         return sorted(error_type_counts.items(), key=lambda x: x[1], reverse=True)[:limit]
     
-    def get_recent_errors(self, limit: int = 10) -> List[ErrorRecord]:
+    def get_recent_errors(self, limit: int = 10) -> list[ErrorRecord]:
         """Get recent error records."""
         return self.error_history[-limit:]
     
@@ -456,7 +451,7 @@ class ErrorHandler:
         self.error_history.clear()
         self.error_counts = {category: 0 for category in ErrorCategory}
     
-    def export_error_log(self, include_stack_traces: bool = False) -> List[Dict[str, Any]]:
+    def export_error_log(self, include_stack_traces: bool = False) -> list[dict[str, Any]]:
         """Export error log for analysis."""
         return [
             {
@@ -479,8 +474,8 @@ class ErrorHandler:
 # Decorators for error handling
 
 def handle_errors(
-    error_handler: Optional[ErrorHandler] = None,
-    context: Optional[ErrorContext] = None,
+    error_handler: ErrorHandler | None = None,
+    context: ErrorContext | None = None,
     attempt_recovery: bool = True,
     reraise: bool = False
 ):
@@ -493,7 +488,7 @@ def handle_errors(
         attempt_recovery: Whether to attempt automatic recovery
         reraise: Whether to reraise the exception after handling
     """
-    def decorator(func: Callable) -> Callable:
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             handler = error_handler or global_error_handler
@@ -519,13 +514,13 @@ def handle_errors(
 
 
 def handle_async_errors(
-    error_handler: Optional[ErrorHandler] = None,
-    context: Optional[ErrorContext] = None,
+    error_handler: ErrorHandler | None = None,
+    context: ErrorContext | None = None,
     attempt_recovery: bool = True,
     reraise: bool = False
 ):
     """Async version of error handling decorator."""
-    def decorator(func: Callable) -> Callable:
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
             handler = error_handler or global_error_handler
@@ -556,7 +551,7 @@ global_error_handler = ErrorHandler()
 
 # Recovery strategies
 
-def api_retry_strategy(error: ApplicationError, record: ErrorRecord) -> Optional[Any]:
+def api_retry_strategy(error: ApplicationError, record: ErrorRecord) -> Any | None:
     """Recovery strategy for API errors with exponential backoff."""
     if record.context.additional_info.get("retry_count", 0) >= 3:
         return None
@@ -572,7 +567,7 @@ def api_retry_strategy(error: ApplicationError, record: ErrorRecord) -> Optional
     return {"retry": True, "wait_time": wait_time}
 
 
-def rate_limit_wait_strategy(error: ApplicationError, record: ErrorRecord) -> Optional[Any]:
+def rate_limit_wait_strategy(error: ApplicationError, record: ErrorRecord) -> Any | None:
     """Recovery strategy for rate limit errors."""
     if isinstance(error, RateLimitError) and error.retry_after:
         import time
@@ -582,7 +577,7 @@ def rate_limit_wait_strategy(error: ApplicationError, record: ErrorRecord) -> Op
     return None
 
 
-def validation_fix_strategy(error: ApplicationError, record: ErrorRecord) -> Optional[Any]:
+def validation_fix_strategy(error: ApplicationError, record: ErrorRecord) -> Any | None:
     """Recovery strategy for validation errors."""
     if isinstance(error, ValidationError):
         # Return suggestions for fixing validation errors
