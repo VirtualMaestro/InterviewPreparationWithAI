@@ -376,35 +376,62 @@ class InterviewPrepGUI:
                     if len(clean_question) > 10:
                         questions.append(clean_question)
 
-        # Method 3: Extract lines that look like questions
+        # Method 3: Extract complete question blocks (enhanced)
         if len(questions) < 3:
             questions = []
-            lines = raw_response.split('\n')
-            current_question = []
+            # Split into sections by ### or numbered questions
+            sections = re.split(r'(?=###\s*Question\s*\d+|^\d+\.\s*\*\*)', raw_response, flags=re.MULTILINE)
 
-            for line in lines:
-                line = line.strip()
-                if not line:
+            for section in sections:
+                section = section.strip()
+                if not section:
                     continue
 
-                # Start of a new question
-                if re.match(r'^\d+\.\s*', line) or line.startswith('**Question'):
-                    # Save previous question
-                    if current_question:
-                        q_text = ' '.join(current_question).strip()
-                        if len(q_text) > 10:
-                            questions.append(q_text)
-                    current_question = [line]
-                elif current_question and not line.startswith('- **') and not line.startswith('*'):
-                    current_question.append(line)
+                # Extract question from section
+                lines = section.split('\n')
+                question_lines = []
+                collecting = False
 
-            # Don't forget the last question
-            if current_question:
-                q_text = ' '.join(current_question).strip()
-                if len(q_text) > 10:
-                    questions.append(q_text)
+                for line in lines:
+                    line = line.strip()
+                    if not line:
+                        continue
 
-        return questions[:5]  # Limit to requested number
+                    # Start collecting when we see "Question:" pattern
+                    if re.search(r'\*\*Question[:\]]*\*\*', line) or line.startswith('**Question'):
+                        collecting = True
+                        # Extract the actual question text
+                        question_match = re.search(r'["\"]([^"\"]+)["\"]', line)
+                        if question_match:
+                            question_lines.append(question_match.group(1))
+                        continue
+                    elif collecting and ('**Assessment' in line or '**What it tests' in line or
+                                       '*Rationale*' in line or 'Skills required' in line):
+                        break
+                    elif collecting and not line.startswith('*') and not line.startswith('-'):
+                        question_lines.append(line)
+
+                if question_lines:
+                    full_question = ' '.join(question_lines).strip()
+                    # Clean up any remaining markdown
+                    full_question = re.sub(r'\*\*([^*]+)\*\*', r'\1', full_question)
+                    if len(full_question) > 20:
+                        questions.append(full_question)
+
+        # Method 4: Fallback - just get sentences that end with question marks or look substantial
+        if len(questions) < 2:
+            sentences = re.split(r'[.!?]+', raw_response)
+            for sentence in sentences:
+                sentence = sentence.strip()
+                if (len(sentence) > 50 and
+                    ('would you' in sentence.lower() or 'how would' in sentence.lower() or
+                     'what' in sentence.lower() or 'describe' in sentence.lower() or
+                     'explain' in sentence.lower() or 'design' in sentence.lower())):
+                    questions.append(sentence + '?')
+                    if len(questions) >= 10:  # Don't go overboard
+                        break
+
+        return questions[:10]  # Allow up to 10 questions
 
     async def generate_questions_async(self, config: dict[str, Any]) -> dict[str, Any] | None:
         """Generate questions asynchronously using existing AI system."""
@@ -424,9 +451,11 @@ class InterviewPrepGUI:
             print(f"DEBUG: Generator initialized successfully")
             st.info("🔍 Debug: Generator initialized successfully")
 
-            # Create generation request
+            # Create generation request with enhanced job description
+            enhanced_job_description = f"{config['job_description']}\n\nIMPORTANT: Generate exactly {config['question_count']} complete interview questions with detailed scenarios and context, not just titles or topic names."
+
             generation_request = GenerationRequest(
-                job_description=config["job_description"],
+                job_description=enhanced_job_description,
                 interview_type=config["interview_type"],
                 experience_level=config["experience_level"],
                 prompt_technique=config["prompt_technique"],
@@ -476,8 +505,23 @@ class InterviewPrepGUI:
             raw_questions = self.extract_questions_directly(result.raw_response)
             print(f"DEBUG: Emergency extraction found {len(raw_questions)} questions: {raw_questions}")
 
-            # Use direct extraction if it found more questions than the parser
-            final_questions = raw_questions if len(raw_questions) > len(result.questions) else result.questions
+            # Use direct extraction if it found more questions than the parser OR if parser questions look incomplete
+            parser_questions_incomplete = any(len(q.strip()) < 50 or q.strip().endswith(':') for q in result.questions)
+
+            if len(raw_questions) > len(result.questions) or parser_questions_incomplete:
+                final_questions = raw_questions
+                print(f"DEBUG: Using emergency extraction due to better count or quality")
+            else:
+                final_questions = result.questions
+                print(f"DEBUG: Using parser results")
+
+            # Post-process to ensure we have exactly the requested count
+            if len(final_questions) < config["question_count"]:
+                print(f"DEBUG: Warning - got {len(final_questions)} questions but requested {config['question_count']}")
+                st.warning(f"⚠️ Generated {len(final_questions)} questions instead of {config['question_count']}. This may be due to API limitations.")
+            else:
+                # Trim to exact count if we have more
+                final_questions = final_questions[:config["question_count"]]
 
             return {
                 'questions': final_questions,
