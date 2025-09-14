@@ -81,6 +81,9 @@ class ResponseParser:
             r'^[•\-\*]\s*(.+)$',     # Bullet points
             r'^Q\d*[:.]?\s*(.+)$',   # Q1: or Q: format
             r'^Question\s*\d*[:.]?\s*(.+)$',  # Question 1: format
+            r'^\*\*Question\s*\d*[:.]\*\*\s*(.+)$',  # **Question 1:** format
+            r'^\*\*Question:\*\*\s*(.+)$',  # **Question:** format
+            r'^\*\*Question\s*\d+:\s*([^*]+)\*\*',  # **Question 1: Title**
         ]
         
         # Keywords for section detection
@@ -116,6 +119,7 @@ class ResponseParser:
         strategies = [
             (ParseStrategy.JSON_STRUCTURED, self._parse_json_structured),
             (ParseStrategy.JSON_SIMPLE, self._parse_json_simple),
+            (ParseStrategy.TEXT_NUMBERED, self._parse_markdown_questions),  # Try markdown format first
             (ParseStrategy.TEXT_NUMBERED, self._parse_text_numbered),
             (ParseStrategy.TEXT_BULLETED, self._parse_text_bulleted),
             (ParseStrategy.TEXT_PARAGRAPH, self._parse_text_paragraph),
@@ -676,6 +680,86 @@ class ResponseParser:
             "questions": parsed.raw_questions,
             "recommendations": parsed.recommendations
         }
+
+    def _parse_markdown_questions(self, response: str) -> ParsedResponse:
+        """
+        Parse markdown-formatted questions with **Question X:** or **Question:** patterns.
+        This handles the specific format returned by OpenAI API.
+        """
+        questions = []
+        raw_questions = []
+        recommendations = []
+
+        # Split by lines and process
+        lines = response.strip().split('\n')
+        current_question = []
+        in_question = False
+
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+
+            # Check for question headers with various patterns
+            question_header_patterns = [
+                r'^\d+\.\s*\*\*Question\s*\d*:?\s*([^*]+)\*\*',  # 1. **Question 1: Title**
+                r'^\*\*Question\s*\d*:?\s*([^*]+)\*\*',         # **Question 1: Title**
+                r'^\*\*Question:\*\*\s*"([^"]+)"',               # **Question:** "Text"
+                r'^\d+\.\s*\*\*([^*]+)\*\*',                     # 1. **Title**
+            ]
+
+            matched = False
+            for pattern in question_header_patterns:
+                match = re.search(pattern, line)
+                if match:
+                    # If we were building a previous question, save it
+                    if current_question:
+                        question_text = ' '.join(current_question).strip()
+                        if question_text and len(question_text) >= self.min_question_length:
+                            questions.append(ParsedQuestion(question=question_text))
+                            raw_questions.append(question_text)
+
+                    # Start new question
+                    current_question = [match.group(1).strip()]
+                    in_question = True
+                    matched = True
+                    break
+
+            if not matched and in_question:
+                # Continue building current question
+                # Skip lines that look like metadata
+                if not (line.startswith('- **') or line.startswith('*Tests:') or
+                       line.startswith('*Focus:') or line.startswith('- *')):
+                    # Clean up the line
+                    clean_line = re.sub(r'^\s*-\s*', '', line)  # Remove leading dashes
+                    clean_line = re.sub(r'^\s*\*\*[^*]*\*\*:?\s*', '', clean_line)  # Remove bold headers
+                    if clean_line and not clean_line.startswith('*'):
+                        current_question.append(clean_line)
+
+        # Don't forget the last question
+        if current_question:
+            question_text = ' '.join(current_question).strip()
+            if question_text and len(question_text) >= self.min_question_length:
+                questions.append(ParsedQuestion(question=question_text))
+                raw_questions.append(question_text)
+
+        # If we didn't get enough questions, fall back to numbered parsing
+        if len(questions) < 2:
+            # Try simple numbered pattern as fallback
+            numbered_questions = re.findall(r'^\d+\.\s*(.+)$', response, re.MULTILINE)
+            for q in numbered_questions:
+                if len(q) >= self.min_question_length:
+                    questions.append(ParsedQuestion(question=q))
+                    raw_questions.append(q)
+
+        return ParsedResponse(
+            questions=questions,
+            recommendations=recommendations,
+            raw_questions=raw_questions,
+            strategy_used=ParseStrategy.TEXT_NUMBERED,
+            success=len(questions) > 0,
+            metadata={'parser': 'markdown_questions'}
+        )
 
 
 # Global parser instance

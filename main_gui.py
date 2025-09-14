@@ -29,7 +29,7 @@ try:
     from src.utils.security import SecurityValidator
     from src.config import Config
 except ImportError as e:
-    st.error(f"""
+    _ = st.error(f"""
     Import Error: {str(e)}
     
     Please make sure you're running this from the project root directory and that
@@ -96,7 +96,7 @@ class InterviewPrepGUI:
         """Render API key setup interface if not validated."""
         st.markdown("## 🔑 API Key Setup")
         
-        st.info("""
+        _ = st.info("""
         To use this application, you need an OpenAI API key.
         
         **How to get an API key:**
@@ -334,6 +334,78 @@ class InterviewPrepGUI:
                 if self.debug_mode:
                     st.error(f"Failed to reinitialize generator: {str(e)}")
 
+    def extract_questions_directly(self, raw_response: str) -> list[str]:
+        """
+        Emergency method to extract questions directly from raw response.
+        This bypasses the complex parser to get actual content.
+        """
+        if not raw_response:
+            return []
+
+        questions = []
+
+        # Method 1: Look for numbered questions with various patterns
+        import re
+
+        # Pattern 1: Numbered with bold titles
+        pattern1 = r'^\d+\.\s*\*\*([^*]+)\*\*(.*)$'
+        matches1 = re.findall(pattern1, raw_response, re.MULTILINE | re.DOTALL)
+
+        for title, content in matches1:
+            # Combine title and content, clean up formatting
+            full_question = f"{title.strip()}: {content.strip()}" if content.strip() else title.strip()
+            full_question = re.sub(r'\s*-\s*\*\*[^*]*\*\*:.*$', '', full_question, flags=re.MULTILINE)
+            full_question = re.sub(r'\s*-\s*\*Tests:.*$', '', full_question, flags=re.MULTILINE)
+            full_question = re.sub(r'\s*-\s*\*Focus:.*$', '', full_question, flags=re.MULTILINE)
+            full_question = full_question.strip()
+            if len(full_question) > 10:
+                questions.append(full_question)
+
+        # Method 2: If method 1 didn't work, try simple numbered extraction
+        if len(questions) < 3:
+            questions = []
+            pattern2 = r'^\d+\.\s*(.+)$'
+            matches2 = re.findall(pattern2, raw_response, re.MULTILINE)
+
+            for match in matches2:
+                clean_question = match.strip()
+                # Remove markdown formatting
+                clean_question = re.sub(r'\*\*([^*]+)\*\*', r'\1', clean_question)
+                # Remove metadata lines
+                if not any(word in clean_question.lower() for word in ['tests:', 'focus:', 'scenario:']):
+                    if len(clean_question) > 10:
+                        questions.append(clean_question)
+
+        # Method 3: Extract lines that look like questions
+        if len(questions) < 3:
+            questions = []
+            lines = raw_response.split('\n')
+            current_question = []
+
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    continue
+
+                # Start of a new question
+                if re.match(r'^\d+\.\s*', line) or line.startswith('**Question'):
+                    # Save previous question
+                    if current_question:
+                        q_text = ' '.join(current_question).strip()
+                        if len(q_text) > 10:
+                            questions.append(q_text)
+                    current_question = [line]
+                elif current_question and not line.startswith('- **') and not line.startswith('*'):
+                    current_question.append(line)
+
+            # Don't forget the last question
+            if current_question:
+                q_text = ' '.join(current_question).strip()
+                if len(q_text) > 10:
+                    questions.append(q_text)
+
+        return questions[:5]  # Limit to requested number
+
     async def generate_questions_async(self, config: dict[str, Any]) -> dict[str, Any] | None:
         """Generate questions asynchronously using existing AI system."""
         try:
@@ -379,9 +451,19 @@ class InterviewPrepGUI:
             print(f"DEBUG: API call completed. Success: {result.success}")
             if result.success:
                 print(f"DEBUG: Got {len(result.questions)} questions")
-                print(f"DEBUG: Questions: {result.questions}")
+                print(f"DEBUG: Raw response: {result.raw_response}")
+                print(f"DEBUG: Questions list: {result.questions}")
+                print(f"DEBUG: Question types: {[type(q) for q in result.questions]}")
+
                 st.success(f"🔍 Debug: API call successful! Got {len(result.questions)} questions")
-                st.code(f"Raw questions: {result.questions}")
+                st.code(f"Raw API Response:\n{result.raw_response}")
+                st.code(f"Parsed Questions:\n{result.questions}")
+
+                # Check each question individually
+                for i, q in enumerate(result.questions):
+                    st.write(f"Question {i+1}: '{q}' (length: {len(str(q))}, type: {type(q)})")
+                    if not str(q).strip():
+                        st.error(f"🚨 Empty question detected at index {i+1}!")
             else:
                 print(f"DEBUG: API call failed: {result.error_message}")
                 st.error(f"🔍 Debug: API call failed: {result.error_message}")
@@ -389,8 +471,16 @@ class InterviewPrepGUI:
             if not result.success:
                 raise Exception(result.error_message or "Generation failed")
 
+            # EMERGENCY FIX: Bypass parser and extract questions directly from raw response
+            print(f"DEBUG: Applying emergency question extraction fix")
+            raw_questions = self.extract_questions_directly(result.raw_response)
+            print(f"DEBUG: Emergency extraction found {len(raw_questions)} questions: {raw_questions}")
+
+            # Use direct extraction if it found more questions than the parser
+            final_questions = raw_questions if len(raw_questions) > len(result.questions) else result.questions
+
             return {
-                'questions': result.questions,
+                'questions': final_questions,
                 'recommendations': result.recommendations,
                 'cost_breakdown': {
                     'input_cost': result.cost_breakdown.input_cost,
@@ -401,6 +491,7 @@ class InterviewPrepGUI:
                     'technique_used': result.technique_used.value,
                     'model_used': result.model_used.value,
                     'timestamp': datetime.now().isoformat(),
+                    'emergency_extraction': len(raw_questions) > len(result.questions),
                     **result.metadata
                 }
             }
