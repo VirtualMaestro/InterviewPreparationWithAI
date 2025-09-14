@@ -10,14 +10,16 @@ Or with debug mode:
 
 import sys
 import os
+import streamlit as st
 from pathlib import Path
+
 
 # Add src directory to path BEFORE any other imports
 src_path = Path(__file__).parent / "src"
 sys.path.insert(0, str(src_path))
 
-import streamlit as st
-from app import app
+from src import app
+
 
 
 def main():
