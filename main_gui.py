@@ -25,7 +25,7 @@ sys.path.insert(0, str(src_path))
 try:
     from src.models.simple_schemas import GenerationRequest, AISettings
     from src.ai.generator import InterviewQuestionGenerator
-    from src.models.enums import InterviewType, ExperienceLevel, PromptTechnique
+    from src.models.enums import InterviewType, ExperienceLevel, PromptTechnique, AIModel
     from src.utils.security import SecurityValidator
     from src.config import Config
 except ImportError as e:
@@ -79,13 +79,13 @@ class InterviewPrepGUI:
         try:
             if not api_key or not api_key.startswith("sk-"):
                 return False
-            
+
             # Store validated API key
             st.session_state.api_key = api_key
             st.session_state.api_key_validated = True
-            
-            # Initialize generator
-            self.generator = InterviewQuestionGenerator(api_key)
+
+            # Initialize generator with AIModel
+            self.generator = InterviewQuestionGenerator(api_key, AIModel.GPT_4O)
             return True
         except Exception as e:
             if self.debug_mode:
@@ -322,12 +322,36 @@ class InterviewPrepGUI:
             "max_tokens": sidebar_config["max_tokens"]
         }
     
+    def ensure_generator_initialized(self):
+        """Ensure generator is initialized with current session API key."""
+        if not self.generator and st.session_state.get('api_key'):
+            try:
+                self.generator = InterviewQuestionGenerator(
+                    st.session_state.api_key,
+                    AIModel.GPT_4O
+                )
+            except Exception as e:
+                if self.debug_mode:
+                    st.error(f"Failed to reinitialize generator: {str(e)}")
+
     async def generate_questions_async(self, config: dict[str, Any]) -> dict[str, Any] | None:
         """Generate questions asynchronously using existing AI system."""
         try:
+            print(f"DEBUG: Starting question generation with config: {config}")
+            st.info(f"🔍 Debug: Starting generation with {config['question_count']} questions")
+
+            # Ensure generator is initialized
+            self.ensure_generator_initialized()
+
             if not self.generator:
-                raise Exception("Generator not initialized - API key validation may have failed")
-            
+                error_msg = "Generator not initialized - API key validation may have failed"
+                print(f"DEBUG ERROR: {error_msg}")
+                st.error(f"🔍 Debug Error: {error_msg}")
+                raise Exception(error_msg)
+
+            print(f"DEBUG: Generator initialized successfully")
+            st.info("🔍 Debug: Generator initialized successfully")
+
             # Create generation request
             generation_request = GenerationRequest(
                 job_description=config["job_description"],
@@ -343,15 +367,28 @@ class InterviewPrepGUI:
             
             generation_request.ai_settings.temperature = config["temperature"]
             
+            print(f"DEBUG: Making API call with request: {generation_request}")
+            st.info("🔍 Debug: Making API call to OpenAI...")
+
             # Generate questions using existing system
             result = await self.generator.generate_questions(
                 generation_request,
                 preferred_technique=config["prompt_technique"]
             )
-            
+
+            print(f"DEBUG: API call completed. Success: {result.success}")
+            if result.success:
+                print(f"DEBUG: Got {len(result.questions)} questions")
+                print(f"DEBUG: Questions: {result.questions}")
+                st.success(f"🔍 Debug: API call successful! Got {len(result.questions)} questions")
+                st.code(f"Raw questions: {result.questions}")
+            else:
+                print(f"DEBUG: API call failed: {result.error_message}")
+                st.error(f"🔍 Debug: API call failed: {result.error_message}")
+
             if not result.success:
                 raise Exception(result.error_message or "Generation failed")
-            
+
             return {
                 'questions': result.questions,
                 'recommendations': result.recommendations,
@@ -368,7 +405,13 @@ class InterviewPrepGUI:
                 }
             }
         except Exception as e:
-            st.error(f"Generation failed: {str(e)}")
+            error_msg = f"Generation failed: {str(e)}"
+            print(f"DEBUG ERROR: {error_msg}")
+            print(f"DEBUG ERROR TYPE: {type(e)}")
+            import traceback
+            print(f"DEBUG TRACEBACK: {traceback.format_exc()}")
+            st.error(f"🔍 Debug Error: {error_msg}")
+            st.code(f"Error type: {type(e)}\nTraceback: {traceback.format_exc()}")
             return None
     
     def handle_generate_questions_mode(self, sidebar_config: dict[str, Any], controls: dict[str, Any]):
@@ -391,16 +434,33 @@ class InterviewPrepGUI:
                     )
                     
                     if results and results.get('questions'):
+                        # Debug: Show what we got
+                        if self.debug_mode:
+                            st.write("Debug - Raw results:", results)
+                            st.write("Debug - Questions list:", results['questions'])
+
                         # Format questions for display
                         questions_text = "**Generated Questions:**\n\n"
-                        for i, question in enumerate(results['questions'][:sidebar_config.get("questions_num", 5)], 1):
-                            questions_text += f"{i}. {question}\n\n"
-                        
+                        questions_list = results['questions'][:sidebar_config.get("questions_num", 5)]
+
+                        # Check if questions are empty
+                        if not any(q.strip() for q in questions_list):
+                            st.error("Generated questions are empty. This might be an API response parsing issue.")
+                            if self.debug_mode:
+                                st.write("Empty questions detected:", questions_list)
+                            return
+
+                        for i, question in enumerate(questions_list, 1):
+                            if question.strip():  # Only show non-empty questions
+                                questions_text += f"{i}. {question.strip()}\n\n"
+
                         # Update chat messages
                         st.session_state.chat_messages = [questions_text]
                         st.rerun()
                     else:
                         st.error("Failed to generate questions. Please try again.")
+                        if self.debug_mode and results:
+                            st.write("Debug - Full results:", results)
                 finally:
                     loop.close()
     
@@ -436,7 +496,7 @@ class InterviewPrepGUI:
     
     def render_custom_css(self):
         """Render custom CSS as specified in the GUI specification."""
-        st.markdown("""
+        _ = st.markdown("""
         <style>
         /* Sidebar styling */
         .css-1d391kg {
@@ -529,12 +589,12 @@ def main():
         app = InterviewPrepGUI()
         app.run()
     except Exception as e:
-        st.error(f"Application error: {str(e)}")
+        _ = st.error(f"Application error: {str(e)}")
         if os.getenv("DEBUG", "false").lower() == "true":
             import traceback
-            st.code(traceback.format_exc())
+            _ = st.code(traceback.format_exc())
         
-        st.info("""
+        _ = st.info("""
         **Troubleshooting:**
         1. Ensure you have set your OpenAI API key
         2. Check your internet connection
