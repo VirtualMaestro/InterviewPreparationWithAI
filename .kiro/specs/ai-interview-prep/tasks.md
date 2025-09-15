@@ -221,7 +221,44 @@
   - Write deployment guide for local development environment
   - _Requirements: 8.3, 7.5_
 
-- [ ] 16. Final integration and testing
+- [x] 16. GUI Interface Consolidation (Legacy Cleanup)
+- [x] 16.1 Analyze current dual interface system
+  - Document differences between main.py (old complex interface) and main_gui.py (new clean interface)
+  - Identify dependencies on src/app.py orchestrator (646 lines) and complex UI components
+  - Map functionality overlap between old app.py and new main_gui.py approaches
+  - Assess impact on existing tests and documentation references
+  - _Requirements: Code simplification and maintainability_
+
+- [x] 16.2 Create simplified main.py entry point
+  - Replace complex main.py with simple redirect to new GUI interface only
+  - Remove old orchestrator dependencies and 100+ lines of complex CSS styling
+  - Implement clean page configuration compatible with main_gui.py
+  - Preserve debug mode and command-line argument handling functionality
+  - _Requirements: Single point of entry, backward compatibility_
+
+- [x] 16.3 Deprecate old application orchestrator
+  - Analyze src/app.py (646 lines) for any unique functionality missing in main_gui.py
+  - Move any critical missing features to the new GUI interface if needed
+  - Remove src/app.py and deprecated UI components (src/ui/components.py, src/ui/session.py)
+  - Clean up unused old UI components and complex tab-based interface
+  - _Requirements: Clean architecture, no functional regression_
+
+- [x] 16.4 Update documentation and references
+  - Update CLAUDE.md to remove all references to old src.app approach
+  - Change running instructions to mention only new GUI interface
+  - Update test commands and architecture descriptions in documentation
+  - Remove outdated complex orchestrator descriptions
+  - _Requirements: Clear documentation, single source of truth_
+
+- [x] 16.5 Validate GUI consolidation
+  - Test that simplified main.py properly uses new GUI interface
+  - Verify all core functionality works through the streamlined entry point
+  - Run existing test suite to ensure no breaking changes introduced
+  - Perform manual testing of complete user workflows with new approach
+  - Validate debug mode and error handling still function correctly
+  - _Requirements: Functional parity, no user experience degradation_
+
+- [ ] 17. Final integration and testing (Renumbered)
   - Run complete application test suite and fix any failing tests
   - Perform manual testing of all user workflows and edge cases
   - Validate all 5 prompt engineering techniques with real API calls

@@ -26,12 +26,8 @@ copy .env.example .env
 
 ### Running the Application
 ```bash
-# Run the main Streamlit application
-streamlit run main.py
-
-# Alternative entry points
-python main.py          # Direct Python execution
-streamlit run main_gui.py   # Alternative GUI version
+# Run the GUI specification-compliant interface
+streamlit run main_gui.py
 ```
 
 ### Testing
@@ -83,7 +79,7 @@ The codebase follows a modular architecture with clear separation of concerns:
 **✅ COMPLETED MODULES:**
 
 - **src/config.py**: Centralized configuration using dataclasses, handles environment variables and directory setup
-- **src/app.py**: Main Streamlit application orchestrator with UI components, error handling, and session management
+- **main_gui.py**: GUI specification-compliant interface with built-in components and session management (single entry point)
 
 - **src/models/**: Data models with comprehensive validation
   - `enums.py`: All application enums (InterviewType, ExperienceLevel, PromptTechnique, etc.)
@@ -107,9 +103,7 @@ The codebase follows a modular architecture with clear separation of concerns:
   - `role_based.py`: Persona-driven interview templates (12 templates)
   - `structured_output.py`: JSON-formatted response templates (10 templates)
 
-- **src/ui/**: Streamlit UI components
-  - `components.py`: Input forms, results display, and UI elements
-  - `session.py`: Session state management and history tracking
+- **src/ui/**: Remaining utility components
   - `error_display.py`: Error presentation and troubleshooting
 
 ### Key Design Patterns
@@ -367,8 +361,7 @@ After implementing any feature, run comprehensive tests to ensure reliability an
 - **`RUN_APP.md`** - Application running instructions and setup guidance
 
 ### Key Implementation Files:
-- **`main.py`** - Application entry point with Streamlit configuration
-- **`src/app.py`** - Main application orchestrator
+- **`main_gui.py`** - GUI specification-compliant interface (single entry point)
 - **`src/models/simple_schemas.py`** - Production data models (use these, not schemas.py)
 
 ## Security Considerations

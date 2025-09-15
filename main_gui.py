@@ -316,7 +316,7 @@ class InterviewPrepGUI:
             "experience_level": exp_mapping[sidebar_config["experience_level"]],
             "interview_type": type_mapping[sidebar_config["question_type"]],
             "prompt_technique": technique_mapping[sidebar_config["prompt_technique"]],
-            "question_count": sidebar_config.get("questions_num", 5),
+            "question_count": sidebar_config.get("questions_num") or 5,  # Fix: Handle None properly
             "temperature": sidebar_config["temperature"],
             "top_p": sidebar_config["top_p"],
             "max_tokens": sidebar_config["max_tokens"]
@@ -576,7 +576,16 @@ class InterviewPrepGUI:
 
                         # Format questions for display
                         questions_text = "**Generated Questions:**\n\n"
-                        questions_list = results['questions'][:sidebar_config.get("questions_num", 5)]
+                        # Fix: Use the correct key and handle None values properly
+                        requested_count = sidebar_config.get("questions_num") or 5
+
+                        # Debug information
+                        if self.debug_mode:
+                            st.write(f"🐛 Debug - Requested count: {requested_count}")
+                            st.write(f"🐛 Debug - Total questions generated: {len(results['questions'])}")
+                            st.write(f"🐛 Debug - Sidebar config: {sidebar_config}")
+
+                        questions_list = results['questions'][:requested_count]
 
                         # Check if questions are empty
                         if not any(q.strip() for q in questions_list):
