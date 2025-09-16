@@ -1,20 +1,23 @@
 """
 Direct test of data models
 """
+import sys
 from datetime import datetime
 from pathlib import Path
-import sys
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 # Import all models explicitly to avoid namespace conflicts
-from src.models.enums import InterviewType, ExperienceLevel, PromptTechnique
-from src.models.simple_schemas import (
-    AISettings, CostBreakdown, GenerationRequest, InterviewResults,
-    InterviewSession, ApplicationState, SessionSummary
-)
+from src.models.enums import ExperienceLevel, InterviewType, PromptTechnique
+from src.models.simple_schemas import (SimpleAISettings,
+                                       SimpleApplicationState,
+                                       SimpleCostBreakdown,
+                                       SimpleGenerationRequest,
+                                       SimpleInterviewResults,
+                                       SimpleInterviewSession,
+                                       SimpleSessionSummary)
 
 
 def test_models():
@@ -30,17 +33,17 @@ def test_models():
 
     # Test AISettings
     print("Testing AISettings...")
-    settings = AISettings()
+    settings = SimpleAISettings()
     assert settings.model == "gpt-4o"
     assert settings.temperature == 0.7
 
-    settings = AISettings(model="gpt-4o", temperature=0.5)
+    settings = SimpleAISettings(model="gpt-4o", temperature=0.5)
     assert settings.model == "gpt-4o"
     print("  PASS AISettings work correctly")
 
     # Test CostBreakdown
     print("Testing CostBreakdown...")
-    cost = CostBreakdown(
+    cost = SimpleCostBreakdown(
         input_cost=0.001,
         output_cost=0.002,
         total_cost=0.003,
@@ -52,7 +55,7 @@ def test_models():
 
     # Test GenerationRequest
     print("Testing GenerationRequest...")
-    request = GenerationRequest(
+    request = SimpleGenerationRequest(
         job_description="Senior Python Developer with Django experience",
         interview_type=InterviewType.TECHNICAL,
         experience_level=ExperienceLevel.SENIOR,
@@ -65,7 +68,7 @@ def test_models():
 
     # Test InterviewResults
     print("Testing InterviewResults...")
-    results = InterviewResults(
+    results = SimpleInterviewResults(
         questions=["Question 1?", "Question 2?"],
         recommendations=["Practice coding", "Review algorithms"],
         cost_breakdown=cost,
@@ -79,7 +82,7 @@ def test_models():
 
     # Test InterviewSession
     print("Testing InterviewSession...")
-    session = InterviewSession(
+    session = SimpleInterviewSession(
         id="session-123",
         timestamp=datetime.now(),
         job_description="Senior Python Developer with Django experience",
@@ -94,10 +97,10 @@ def test_models():
 
     # Test ApplicationState
     print("Testing ApplicationState...")
-    state = ApplicationState()
+    state = SimpleApplicationState()
     assert state.total_api_calls == 0
 
-    session_summary = SessionSummary(
+    session_summary = SimpleSessionSummary(
         session_id="test-123",
         timestamp=datetime.now(),
         interview_type=InterviewType.TECHNICAL,
@@ -114,6 +117,37 @@ def test_models():
 
     print("\nAll data model tests passed! Models are working correctly.")
 
+
+if __name__ == "__main__":
+    test_models()
+    print("\nAll data model tests passed! Models are working correctly.")
+
+
+if __name__ == "__main__":
+    test_models()
+    print("\nAll data model tests passed! Models are working correctly.")
+
+
+if __name__ == "__main__":
+    test_models()
+    print("\nAll data model tests passed! Models are working correctly.")
+
+
+if __name__ == "__main__":
+    test_models()
+    print("\nAll data model tests passed! Models are working correctly.")
+
+
+if __name__ == "__main__":
+    test_models()
+
+
+if __name__ == "__main__":
+    test_models()
+
+
+if __name__ == "__main__":
+    test_models()
 
 if __name__ == "__main__":
     test_models()

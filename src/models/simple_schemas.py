@@ -9,7 +9,7 @@ from .enums import ExperienceLevel, InterviewType, PromptTechnique
 
 
 @dataclass
-class AISettings:
+class SimpleAISettings:
     """Configuration settings for AI model parameters"""
     model: str = "gpt-4o"
     temperature: float = 0.7
@@ -30,7 +30,7 @@ class AISettings:
 
 
 @dataclass
-class CostBreakdown:
+class SimpleCostBreakdown:
     """Cost breakdown for API usage"""
     input_cost: float
     output_cost: float
@@ -49,14 +49,14 @@ class CostBreakdown:
 
 
 @dataclass
-class GenerationRequest:
+class SimpleGenerationRequest:
     """Request model for question generation"""
     job_description: str
     interview_type: InterviewType
     experience_level: ExperienceLevel
     prompt_technique: PromptTechnique
     question_count: int = 5
-    ai_settings: AISettings | None = None
+    ai_settings: SimpleAISettings | None = None
 
     def __post_init__(self):
         """Validate request after initialization"""
@@ -78,15 +78,15 @@ class GenerationRequest:
                     f'Job description contains harmful content: {pattern}')
 
         if self.ai_settings is None:
-            self.ai_settings = AISettings()
+            self.ai_settings = SimpleAISettings()
 
 
 @dataclass
-class InterviewResults:
+class SimpleInterviewResults:
     """Results from interview question generation"""
     questions: list[str]
     recommendations: list[str]
-    cost_breakdown: CostBreakdown
+    cost_breakdown: SimpleCostBreakdown
     response_time: float
     model_used: str
     tokens_used: dict[str, int]
@@ -112,17 +112,17 @@ class InterviewResults:
 
 
 @dataclass
-class InterviewSession:
+class SimpleInterviewSession:
     """Session data for interview preparation"""
     id: str
     timestamp: datetime
     job_description: str
     interview_type: InterviewType
     experience_level: ExperienceLevel
-    ai_settings: AISettings
+    ai_settings: SimpleAISettings
     prompt_technique: PromptTechnique
     question_count: int
-    results: InterviewResults | None = None
+    results: SimpleInterviewResults | None = None
 
     def __post_init__(self):
         """Validate session data after initialization"""
@@ -134,7 +134,7 @@ class InterviewSession:
 
 
 @dataclass
-class SessionSummary:
+class SimpleSessionSummary:
     """Summary of a completed interview session"""
     session_id: str
     timestamp: datetime
@@ -152,15 +152,15 @@ class SessionSummary:
 
 
 @dataclass
-class ApplicationState:
+class SimpleApplicationState:
     """Application state management"""
-    current_session: SessionSummary | None = None
-    session_history: list[SessionSummary] = field(default_factory=list)
+    current_session: SimpleSessionSummary | None = None
+    session_history: list[SimpleSessionSummary] = field(default_factory=list)
     total_api_calls: int = 0
     total_cost: float = 0.0
     error_count: int = 0
 
-    def add_session(self, session: SessionSummary) -> None:
+    def add_session(self, session: SimpleSessionSummary) -> None:
         """Add a new session to history"""
         self.session_history.append(session)
 
@@ -172,6 +172,6 @@ class ApplicationState:
         self.total_api_calls += 1
         self.total_cost += session.total_cost
 
-    def get_recent_sessions(self, count: int = 5) -> list[SessionSummary]:
+    def get_recent_sessions(self, count: int = 5) -> list[SimpleSessionSummary]:
         """Get the most recent sessions"""
         return self.session_history[-count:] if self.session_history else []
