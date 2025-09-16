@@ -8,14 +8,14 @@ Run this file to start the new GUI interface:
     streamlit run main_gui.py
 """
 
-import sys
-import os
-import streamlit as st
-from typing import Any
-from datetime import datetime
 import asyncio
-
+import os
+import sys
+from datetime import datetime
 from pathlib import Path
+from typing import Any
+
+import streamlit as st
 
 # Add src directory to path BEFORE any other imports
 src_path = Path(__file__).parent / "src"
@@ -23,11 +23,12 @@ sys.path.insert(0, str(src_path))
 
 
 try:
-    from src.models.simple_schemas import GenerationRequest, AISettings
     from src.ai.generator import InterviewQuestionGenerator
-    from src.models.enums import InterviewType, ExperienceLevel, PromptTechnique, AIModel
-    from src.utils.security import SecurityValidator
     from src.config import Config
+    from src.models.enums import (AIModel, ExperienceLevel, InterviewType,
+                                  PromptTechnique)
+    from src.models.simple_schemas import SimpleGenerationRequest, SimpleAISettings
+    from src.utils.security import SecurityValidator
 except ImportError as e:
     _ = st.error(f"""
     Import Error: {str(e)}
@@ -334,7 +335,41 @@ class InterviewPrepGUI:
                 if self.debug_mode:
                     st.error(f"Failed to reinitialize generator: {str(e)}")
 
-    def extract_questions_directly(self, raw_response: str) -> list[str]:
+    def _get_fallback_questions(self, question_type: str) -> list[str]:
+        """Get fallback questions when API fails."""
+        fallback_questions = {
+            "Technical": [
+                "Explain the difference between list and tuple in Python.",
+                "How would you implement a simple caching mechanism?",
+                "What is the difference between synchronous and asynchronous programming?",
+                "How do you handle exceptions in your preferred programming language?",
+                "Describe the concept of database indexing and its importance."
+            ],
+            "Behavioural": [
+                "Tell me about a challenging project you worked on recently.",
+                "How do you handle conflicts with team members?",
+                "Describe a time when you had to learn a new technology quickly.",
+                "How do you prioritize tasks when you have multiple deadlines?",
+                "Give an example of when you went above and beyond in your role."
+            ],
+            "Case Studies": [
+                "How would you design a system to handle 1 million concurrent users?",
+                "Walk me through how you would approach debugging a production issue.",
+                "How would you design a recommendation system for an e-commerce platform?",
+                "Explain how you would migrate a monolith to microservices architecture.",
+                "How would you handle data consistency in a distributed system?"
+            ],
+            "Questions for Employer": [
+                "What does a typical day look like for this role?",
+                "What are the biggest challenges facing the team right now?",
+                "How do you measure success in this position?",
+                "What opportunities are there for professional development?",
+                "Can you tell me about the team culture and working environment?"
+            ]
+        }
+        return fallback_questions.get(question_type, fallback_questions["Technical"])
+
+    def extract_questions_directly(self, raw_response: str, technique: str) -> list[str]:
         """
         Emergency method to extract questions directly from raw response.
         This bypasses the complex parser to get actual content.
@@ -344,8 +379,33 @@ class InterviewPrepGUI:
 
         questions = []
 
-        # Method 1: Look for numbered questions with various patterns
+        # Method 0: Check if this is a JSON response (ONLY for Structured Output)
+        import json
         import re
+
+        # Only try JSON parsing for Structured Output technique
+        if technique and "structured" in technique.lower():
+            try:
+                # Try to parse as JSON first
+                json_data = json.loads(raw_response)
+                if isinstance(json_data, dict) and "questions" in json_data:
+                    print(f"DEBUG: Found JSON structured output with {len(json_data['questions'])} question objects")
+                    # Handle structured output format
+                    for item in json_data["questions"]:
+                        if isinstance(item, dict) and "question" in item:
+                            question_text = item["question"].strip()
+                            if question_text and len(question_text) > 5:  # Reduced minimum length for better extraction
+                                questions.append(question_text)
+                                print(f"DEBUG: Extracted JSON question: {question_text[:100]}...")
+                    if questions:
+                        print(f"DEBUG: Successfully extracted {len(questions)} questions from JSON")
+                        return questions
+            except (json.JSONDecodeError, KeyError, TypeError):
+                # Not JSON or doesn't have expected structure, continue with text parsing
+                print(f"DEBUG: JSON parsing failed for structured output, falling back to text parsing")
+                pass
+
+        # Method 1: Look for numbered questions with various patterns
 
         # Pattern 1: Numbered with bold titles
         pattern1 = r'^\d+\.\s*\*\*([^*]+)\*\*(.*)$'
@@ -454,7 +514,7 @@ class InterviewPrepGUI:
             # Create generation request with enhanced job description
             enhanced_job_description = f"{config['job_description']}\n\nIMPORTANT: Generate exactly {config['question_count']} complete interview questions with detailed scenarios and context, not just titles or topic names."
 
-            generation_request = GenerationRequest(
+            generation_request = SimpleGenerationRequest(
                 job_description=enhanced_job_description,
                 interview_type=config["interview_type"],
                 experience_level=config["experience_level"],
@@ -464,7 +524,7 @@ class InterviewPrepGUI:
             
             # Set AI settings
             if not generation_request.ai_settings:
-                generation_request.ai_settings = AISettings()
+                generation_request.ai_settings = SimpleAISettings()
             
             generation_request.ai_settings.temperature = config["temperature"]
             
@@ -498,11 +558,46 @@ class InterviewPrepGUI:
                 st.error(f"🔍 Debug: API call failed: {result.error_message}")
 
             if not result.success:
-                raise Exception(result.error_message or "Generation failed")
+                # Provide more helpful error messages and fallback questions
+                error_msg = result.error_message or "Generation failed"
+                if error_msg == "'content'":
+                    error_msg = "API response format error. This usually indicates an API key issue or OpenAI service problem."
+                elif "content" in error_msg.lower():
+                    error_msg = f"API communication error: {error_msg}. Please check your API key and internet connection."
+
+                print(f"DEBUG: Generation failed with error: {error_msg}")
+
+                # Show error but provide fallback questions so users can still test the app
+                st.warning(f"⚠️ API Error: {error_msg}")
+                st.info("💡 Using fallback questions for demonstration. Please check your API key to generate personalized questions.")
+
+                # Return fallback questions based on interview type
+                fallback_questions = self._get_fallback_questions(st.session_state.get("question_type", "Technical"))
+                return {
+                    "questions": fallback_questions,
+                    "recommendations": [
+                        "Fix your API key to get personalized questions.",
+                        "Check your OpenAI account balance.",
+                        "Verify your internet connection."
+                    ],
+                    "cost_breakdown": {
+                        "input_cost": 0.0,
+                        "output_cost": 0.0,
+                        "total_cost": 0.0,
+                        "input_tokens": 0,
+                        "output_tokens": 0
+                    },
+                    "metadata": {
+                        "technique": "Fallback",
+                        "model": "demo-mode",
+                        "error": error_msg
+                    }
+                }
 
             # EMERGENCY FIX: Bypass parser and extract questions directly from raw response
             print(f"DEBUG: Applying emergency question extraction fix")
-            raw_questions = self.extract_questions_directly(result.raw_response)
+            technique_used = result.technique_used.value if result.technique_used else "Unknown technique"
+            raw_questions = self.extract_questions_directly(result.raw_response, technique_used)
             print(f"DEBUG: Emergency extraction found {len(raw_questions)} questions: {raw_questions}")
 
             # Use direct extraction if it found more questions than the parser OR if parser questions look incomplete
@@ -608,35 +703,269 @@ class InterviewPrepGUI:
                 finally:
                     loop.close()
     
+    async def generate_mock_questions_async(self, sidebar_config: dict[str, Any], count: int = 5) -> list[str]:
+        """Generate questions for mock interview using AI system."""
+        try:
+            # Map configuration for AI generation
+            mapped_config = self.map_config_to_enums(sidebar_config)
+            mapped_config["question_count"] = count  # Generate a pool of questions
+
+            # Ensure generator is initialized
+            self.ensure_generator_initialized()
+
+            if not self.generator:
+                raise Exception("Generator not initialized - API key validation may have failed")
+
+            # Create generation request for mock interview
+            generation_request = SimpleGenerationRequest(
+                job_description=f"{mapped_config['job_description']}\n\nIMPORTANT: Generate complete, detailed interview questions, not just topics or titles. Each question should be specific, actionable, and suitable for a live interview format. Examples: 'Can you walk me through how you would design a REST API for a user management system?' rather than just 'System Architecture Design'.",
+                interview_type=mapped_config["interview_type"],
+                experience_level=mapped_config["experience_level"],
+                prompt_technique=mapped_config["prompt_technique"],
+                question_count=count
+            )
+
+            if not generation_request.ai_settings:
+                generation_request.ai_settings = SimpleAISettings()
+            generation_request.ai_settings.temperature = mapped_config["temperature"]
+
+            # Generate questions
+            result = await self.generator.generate_questions(
+                generation_request,
+                preferred_technique=mapped_config["prompt_technique"]
+            )
+
+            if result.success and result.questions:
+                # Extract questions using our improved parser
+                technique_used = str(result.technique_used.value) if result.technique_used else "Unknown technique"
+                questions = self.extract_questions_directly(result.raw_response, technique_used)
+                return questions if questions else result.questions
+            else:
+                return []
+
+        except Exception as e:
+            print(f"DEBUG ERROR: Mock question generation failed: {str(e)}")
+            return []
+
+    async def evaluate_answer_async(self, question: str, answer: str, job_description: str, experience_level: str) -> dict[str, Any]:
+        """Evaluate user's answer using AI and provide feedback."""
+        try:
+            if not self.generator:
+                return {"feedback": "Unable to evaluate - generator not available", "score": 0}
+
+            # Create evaluation prompt
+            evaluation_prompt = f"""
+            As an expert interviewer, evaluate this interview answer:
+
+            **Job Context:** {job_description[:200]}...
+            **Experience Level:** {experience_level}
+            **Question:** {question}
+            **Candidate's Answer:** {answer}
+
+            Please provide:
+            1. A score from 1-10
+            2. Specific feedback on strengths and areas for improvement
+            3. Suggestions for a better answer
+
+            Format your response as:
+            SCORE: [1-10]
+            FEEDBACK: [Your detailed feedback]
+            SUGGESTIONS: [Specific suggestions for improvement]
+            """
+
+            # Use the generator's OpenAI client for evaluation
+            import openai
+            client = openai.AsyncOpenAI(api_key=st.session_state.get('api_key'))
+
+            response = await client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": "You are an expert technical interviewer providing constructive feedback."},
+                    {"role": "user", "content": evaluation_prompt}
+                ],
+                max_tokens=500,
+                temperature=0.3
+            )
+
+            feedback_text = response.choices[0].message.content
+
+            # Parse the response
+            score = 7  # Default score
+            feedback = "Good effort! Keep practicing."
+            suggestions = "Continue developing your technical skills."
+
+            if feedback_text:
+                lines = feedback_text.split('\n')
+                for line in lines:
+                    line = line.strip()
+                    if line.startswith('SCORE:'):
+                        try:
+                            score = int(line.split(':')[1].strip())
+                        except:
+                            pass
+                    elif line.startswith('FEEDBACK:'):
+                        feedback = line.split(':', 1)[1].strip()
+                    elif line.startswith('SUGGESTIONS:'):
+                        suggestions = line.split(':', 1)[1].strip()
+
+            return {
+                "score": score,
+                "feedback": feedback,
+                "suggestions": suggestions
+            }
+
+        except Exception as e:
+            print(f"DEBUG ERROR: Answer evaluation failed: {str(e)}")
+            return {
+                "score": 7,
+                "feedback": "Your answer shows good understanding. Keep practicing!",
+                "suggestions": "Try to provide more specific examples and technical details."
+            }
+
     def handle_mock_interview_mode(self, sidebar_config: dict[str, Any], controls: dict[str, Any]):
-        """Handle Mock Interview mode functionality."""
-        if controls["main_button"] and not st.session_state.mock_started:
-            # Start mock interview
-            st.session_state.mock_started = True
-            st.session_state.current_question = 1
-            st.session_state.chat_messages = [
-                "**Question 1:**\nExplain the difference between synchronous and asynchronous programming in Python. Provide examples of usage."
-            ]
-            st.rerun()
-        
-        if controls["submit_answer"] and controls["user_answer"]:
-            # Process user answer (simplified evaluation for now)
-            st.session_state.chat_messages.append(f"**Your Answer:** {controls['user_answer']}")
-            st.session_state.chat_messages.append("**Feedback:** Good answer! Consider providing more specific examples next time.")
-            
-            # Update statistics (simplified logic)
-            st.session_state.correct += 1
-            
-            # Clear input
-            st.session_state.user_input = ""
-            st.rerun()
-        
-        if controls["next_button"] and st.session_state.mock_started:
-            # Move to next question
-            st.session_state.current_question += 1
-            next_q = f"**Question {st.session_state.current_question}:**\nDescribe how you would optimize a slow SQL query."
-            st.session_state.chat_messages.append(next_q)
-            st.rerun()
+        """Handle Mock Interview mode functionality with AI integration."""
+
+        # Start Mock Interview
+        if controls["main_button"] and not st.session_state.get('mock_started', False):
+            if not sidebar_config["job_description"]:
+                st.warning("Please enter a job description to start the mock interview")
+                return
+
+            with st.spinner("Generating interview questions..."):
+                # Generate questions using AI
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                try:
+                    questions = loop.run_until_complete(
+                        self.generate_mock_questions_async(sidebar_config, count=10)
+                    )
+
+                    if questions:
+                        # Initialize mock interview state
+                        st.session_state.mock_started = True
+                        st.session_state.mock_questions = questions
+                        st.session_state.current_question = 0
+                        st.session_state.correct = 0
+                        st.session_state.incorrect = 0
+                        st.session_state.total_score = 0
+                        st.session_state.answers_given = []
+
+                        # Show first question (clean up formatting)
+                        first_question = questions[0] if questions else "Tell me about yourself."
+                        # Remove any duplicate "Question X:" prefixes
+                        clean_question = first_question
+                        if clean_question.lower().startswith('question '):
+                            # Remove the "Question X:" prefix since we add our own
+                            parts = clean_question.split(':', 1)
+                            if len(parts) > 1:
+                                clean_question = parts[1].strip()
+
+                        st.session_state.chat_messages = [
+                            f"**🎯 Mock Interview Started!**\n\n**Question 1:**\n{clean_question}"
+                        ]
+                        st.rerun()
+                    else:
+                        st.error("Failed to generate questions. Please check your API key and try again.")
+                finally:
+                    loop.close()
+
+        # Submit Answer
+        if controls["submit_answer"] and controls["user_answer"] and st.session_state.get('mock_started', False):
+            user_answer = controls["user_answer"].strip()
+            if not user_answer:
+                st.warning("Please enter an answer before submitting.")
+                return
+
+            with st.spinner("Evaluating your answer..."):
+                # Get current question
+                current_q_index = st.session_state.get('current_question', 0)
+                questions = st.session_state.get('mock_questions', [])
+
+                if current_q_index < len(questions):
+                    current_question = questions[current_q_index]
+
+                    # Evaluate answer using AI
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    try:
+                        evaluation = loop.run_until_complete(
+                            self.evaluate_answer_async(
+                                current_question,
+                                user_answer,
+                                sidebar_config["job_description"],
+                                sidebar_config["experience_level"]
+                            )
+                        )
+
+                        # Store the answer and evaluation
+                        st.session_state.answers_given.append({
+                            "question": current_question,
+                            "answer": user_answer,
+                            "evaluation": evaluation
+                        })
+
+                        # Update statistics
+                        score = evaluation.get("score", 7)
+                        st.session_state.total_score += score
+                        if score >= 7:
+                            st.session_state.correct += 1
+                        else:
+                            st.session_state.incorrect += 1
+
+                        # Add to chat
+                        st.session_state.chat_messages.append(f"**Your Answer:** {user_answer}")
+                        st.session_state.chat_messages.append(
+                            f"**AI Feedback (Score: {score}/10):**\n{evaluation.get('feedback', 'Good effort!')}\n\n"
+                            f"**💡 Suggestions:** {evaluation.get('suggestions', 'Keep practicing!')}"
+                        )
+
+                        # Clear input by using a rerun instead of direct modification
+                        # Note: Cannot modify user_input after widget creation, so we'll use rerun
+                        st.rerun()
+
+                    finally:
+                        loop.close()
+
+        # Next Question
+        if controls["next_button"] and st.session_state.get('mock_started', False):
+            current_q_index = st.session_state.get('current_question', 0)
+            questions = st.session_state.get('mock_questions', [])
+
+            if current_q_index + 1 < len(questions):
+                # Move to next question
+                st.session_state.current_question = current_q_index + 1
+                next_question = questions[current_q_index + 1]
+
+                # Remove any duplicate "Question X:" prefixes
+                clean_next_question = next_question
+                if clean_next_question.lower().startswith('question '):
+                    # Remove the "Question X:" prefix since we add our own
+                    parts = clean_next_question.split(':', 1)
+                    if len(parts) > 1:
+                        clean_next_question = parts[1].strip()
+
+                st.session_state.chat_messages.append(
+                    f"**Question {current_q_index + 2}:**\n{clean_next_question}"
+                )
+                st.rerun()
+            else:
+                # End of interview
+                total_questions = len(st.session_state.get('answers_given', []))
+                avg_score = st.session_state.get('total_score', 0) / max(total_questions, 1)
+
+                st.session_state.chat_messages.append(
+                    f"**🎉 Mock Interview Complete!**\n\n"
+                    f"**Final Results:**\n"
+                    f"- Questions Answered: {total_questions}\n"
+                    f"- Average Score: {avg_score:.1f}/10\n"
+                    f"- Strong Answers: {st.session_state.get('correct', 0)}\n"
+                    f"- Needs Improvement: {st.session_state.get('incorrect', 0)}\n\n"
+                    f"Great job! Review the feedback above to improve your interview skills."
+                )
+
+                # Reset for next interview
+                st.session_state.mock_started = False
+                st.rerun()
     
     def render_custom_css(self):
         """Render custom CSS as specified in the GUI specification."""

@@ -726,14 +726,25 @@ class ResponseParser:
                     break
 
             if not matched and in_question:
-                # Continue building current question
-                # Skip lines that look like metadata
+                # Continue building current question, but be more selective
+                # Skip lines that look like metadata or explanatory text
                 if not (line.startswith('- **') or line.startswith('*Tests:') or
-                       line.startswith('*Focus:') or line.startswith('- *')):
+                       line.startswith('*Focus:') or line.startswith('- *') or
+                       line.startswith('This question') or line.startswith('This tests') or
+                       line.startswith('This assesses') or line.startswith('This evaluates') or
+                       'assesses your ability' in line.lower() or
+                       'this question tests' in line.lower() or
+                       'requires familiarity' in line.lower()):
+
                     # Clean up the line
                     clean_line = re.sub(r'^\s*-\s*', '', line)  # Remove leading dashes
                     clean_line = re.sub(r'^\s*\*\*[^*]*\*\*:?\s*', '', clean_line)  # Remove bold headers
-                    if clean_line and not clean_line.startswith('*'):
+
+                    # Only add lines that look like actual questions or brief descriptions
+                    if (clean_line and not clean_line.startswith('*') and
+                        len(clean_line) > 10 and
+                        (clean_line.endswith('?') or
+                         any(qw in clean_line.lower() for qw in ['how', 'what', 'why', 'when', 'where', 'which', 'describe', 'explain', 'implement']))):
                         current_question.append(clean_line)
 
         # Don't forget the last question
