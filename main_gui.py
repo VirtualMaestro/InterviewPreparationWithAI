@@ -750,8 +750,18 @@ class InterviewPrepGUI:
     async def evaluate_answer_async(self, question: str, answer: str, job_description: str, experience_level: str) -> dict[str, Any]:
         """Evaluate user's answer using AI and provide feedback."""
         try:
+            # Ensure generator is available, create if needed
+            if not self.generator and st.session_state.get('api_key'):
+                try:
+                    self.generator = InterviewQuestionGenerator(
+                        st.session_state.api_key,
+                        AIModel.GPT_4O
+                    )
+                except Exception as e:
+                    return {"feedback": f"Unable to initialize evaluator: {str(e)}", "score": 0}
+
             if not self.generator:
-                return {"feedback": "Unable to evaluate - generator not available", "score": 0}
+                return {"feedback": "Unable to evaluate - no API key available", "score": 0}
 
             # Create evaluation prompt
             evaluation_prompt = f"""
