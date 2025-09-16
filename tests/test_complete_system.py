@@ -20,9 +20,9 @@ from src.ai.prompts import PromptTemplate, prompt_library
 from src.ai.structured_output import StructuredOutputPrompts
 from src.models.enums import (DifficultyLevel, ExperienceLevel, InterviewType,
                           PromptTechnique, QuestionCategory)
-from src.models.schemas import (AISettings, ApplicationState, CostBreakdown,
-                            GenerationRequest, InterviewResults, Question,
-                            SessionSummary)
+from src.models.simple_schemas import (SimpleAISettings, SimpleApplicationState, SimpleCostBreakdown,
+                            SimpleGenerationRequest, SimpleInterviewResults, SimpleQuestion,
+                            SimpleSessionSummary)
 
 # Add src to path for imports
 test_dir = Path(__file__).parent
@@ -239,14 +239,14 @@ def test_data_models():
 
         # Test AISettings
         print("Testing AISettings model...")
-        ai_settings = AISettings(
+        ai_settings = SimpleAISettings(
             model="gpt-4o",
             temperature=0.7,
             max_tokens=2000
         )
         assert ai_settings.model == "gpt-4o"
         assert ai_settings.temperature == 0.7
-        print("✅ AISettings model works")
+        print("✅ SimpleAISettings model works")
 
         # Test Question model
         print("Testing Question model...")
@@ -263,7 +263,7 @@ def test_data_models():
 
         # Test GenerationRequest
         print("Testing GenerationRequest model...")
-        request = GenerationRequest(
+        request = SimpleGenerationRequest(
             job_description="Senior Python Developer with 5+ years experience",
             interview_type=InterviewType.TECHNICAL,
             experience_level=ExperienceLevel.SENIOR,
@@ -272,7 +272,7 @@ def test_data_models():
         )
         assert request.question_count == 5
         assert request.interview_type == InterviewType.TECHNICAL
-        print("✅ GenerationRequest model works")
+        print("✅ SimpleGenerationRequest model works")
 
     except Exception as e:
         print(f"❌ Data models test failed: {e}")
@@ -312,7 +312,7 @@ def test_error_handling():
         # Test Pydantic validation
         print("Testing Pydantic validation...")
         try:
-            GenerationRequest(
+            SimpleGenerationRequest(
                 job_description="",  # Too short
                 interview_type=InterviewType.TECHNICAL,
                 experience_level=ExperienceLevel.SENIOR,

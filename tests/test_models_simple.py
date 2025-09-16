@@ -8,9 +8,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from src.models.schemas import (AISettings, ApplicationState, CostBreakdown,
-                            GenerationRequest, InterviewResults,
-                            InterviewSession, Question, SessionSummary)
+from src.models.simple_schemas import (SimpleAISettings, SimpleApplicationState, SimpleCostBreakdown,
+                            SimpleGenerationRequest, SimpleInterviewResults,
+                            SimpleInterviewSession, SimpleQuestion, SimpleSessionSummary)
 from src.models.enums import (DifficultyLevel, ExperienceLevel, InterviewType,
                           PromptTechnique, QuestionCategory)
 import sys
@@ -21,24 +21,24 @@ from pathlib import Path
 
 
 def test_ai_settings():
-    """Test AISettings model"""
-    print("Testing AISettings...")
+    """Test SimpleAISettings model"""
+    print("Testing SimpleAISettings...")
 
     # Test default values
-    settings = AISettings()
+    settings = SimpleAISettings()
     assert settings.model == "gpt-4o"
     assert settings.temperature == 0.7
     print("  ✓ Default values correct")
 
     # Test custom values
-    settings = AISettings(model="gpt-5", temperature=0.5)
+    settings = SimpleAISettings(model="gpt-5", temperature=0.5)
     assert settings.model == "gpt-5"
     assert settings.temperature == 0.5
     print("  ✓ Custom values work")
 
     # Test validation
     try:
-        AISettings(temperature=3.0)  # Should fail
+        SimpleAISettings(temperature=3.0)  # Should fail
         assert False, "Should have failed validation"
     except Exception:
         print("  ✓ Validation works")
@@ -78,8 +78,8 @@ def test_cost_breakdown():
 
 
 def test_generation_request():
-    """Test GenerationRequest model"""
-    print("Testing GenerationRequest...")
+    """Test SimpleGenerationRequest model"""
+    print("Testing SimpleGenerationRequest...")
 
     request = GenerationRequest(
         job_description="Senior Python Developer with Django experience",

@@ -11,29 +11,21 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-import unittest
 import json
 import sys
+import unittest
 from pathlib import Path
+
+from src.ai.generator import (APIError, GenerationResult, GeneratorError,
+                              InterviewQuestionGenerator, ParsingError,
+                              RateLimitError)
+from src.ai.prompts import PromptTemplate
+from src.models.enums import (AIModel, ExperienceLevel, InterviewType,
+                              PromptTechnique)
+from src.models.simple_schemas import SimpleGenerationRequest
 
 # Add parent directory to path
 
-from src.ai.generator import (
-    InterviewQuestionGenerator,
-    GeneratorError,
-    APIError,
-    ParsingError,
-    RateLimitError,
-    GenerationResult
-)
-from src.models.enums import (
-    InterviewType,
-    ExperienceLevel,
-    PromptTechnique,
-    AIModel
-)
-from src.models.simple_schemas import GenerationRequest
-from src.ai.prompts import PromptTemplate
 
 
 class TestGeneratorSimple(unittest.TestCase):
@@ -155,7 +147,7 @@ Tips for preparation:
             metadata={}
         )
         
-        request = GenerationRequest(
+        request = SimpleGenerationRequest(
             job_description="Python Developer at StartupCo",
             interview_type=InterviewType.TECHNICAL,
             experience_level=ExperienceLevel.MID,
@@ -181,7 +173,7 @@ Tips for preparation:
             metadata={}
         )
         
-        request = GenerationRequest(
+        request = SimpleGenerationRequest(
             job_description="Engineering Manager",
             interview_type=InterviewType.BEHAVIORAL,
             experience_level=ExperienceLevel.SENIOR,
@@ -200,7 +192,7 @@ Tips for preparation:
     
     def test_select_prompt_template(self):
         """Test template selection logic."""
-        request = GenerationRequest(
+        request = SimpleGenerationRequest(
             job_description="Test Job",
             interview_type=InterviewType.TECHNICAL,
             experience_level=ExperienceLevel.JUNIOR,
@@ -223,7 +215,7 @@ Tips for preparation:
     
     def test_select_role_based_template(self):
         """Test role-based template selection with persona."""
-        request = GenerationRequest(
+        request = SimpleGenerationRequest(
             job_description="Test Job",
             interview_type=InterviewType.BEHAVIORAL,
             experience_level=ExperienceLevel.MID,
@@ -242,13 +234,13 @@ Tips for preparation:
     
     def test_generation_result_structure(self):
         """Test GenerationResult dataclass."""
-        from models.simple_schemas import CostBreakdown
+        from models.simple_schemas import SimpleCostBreakdown
         
         result = GenerationResult(
             questions=["Q1", "Q2"],
             recommendations=["R1"],
             metadata={"test": "data"},
-            cost_breakdown=CostBreakdown(
+            cost_breakdown=SimpleCostBreakdown(
                 input_cost=0.01,
                 output_cost=0.02,
                 total_cost=0.03,

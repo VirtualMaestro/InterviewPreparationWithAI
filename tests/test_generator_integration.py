@@ -18,28 +18,19 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 import asyncio
 import json
-import unittest
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
-from dataclasses import dataclass
-
 # Add parent directory to path
 import sys
+import unittest
+from dataclasses import dataclass
 from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
-from src.ai.generator import (
-    InterviewQuestionGenerator,
-    GenerationResult,
-    APIError,
-    ParsingError,
-    RateLimitError
-)
-from src.models.enums import (
-    InterviewType,
-    ExperienceLevel,
-    PromptTechnique,
-    AIModel
-)
-from src.models.simple_schemas import GenerationRequest
+from src.ai.generator import (APIError, GenerationResult,
+                              InterviewQuestionGenerator, ParsingError,
+                              RateLimitError)
+from src.models.enums import (AIModel, ExperienceLevel, InterviewType,
+                              PromptTechnique)
+from src.models.simple_schemas import SimpleGenerationRequest
 
 
 class TestGeneratorIntegration(unittest.TestCase):
@@ -51,7 +42,7 @@ class TestGeneratorIntegration(unittest.TestCase):
         self.generator = InterviewQuestionGenerator(self.api_key, AIModel.GPT_4O)
         
         # Sample generation request
-        self.sample_request = GenerationRequest(
+        self.sample_request = SimpleGenerationRequest(
             job_description="Senior Python Developer at Tech Company",
             interview_type=InterviewType.TECHNICAL,
             experience_level=ExperienceLevel.SENIOR,
@@ -200,7 +191,7 @@ Recommendations:
         self.generator.client = mock_client
         
         # Use zero-shot for text response
-        request = GenerationRequest(
+        request = SimpleGenerationRequest(
             job_description="Python Developer",
             interview_type=InterviewType.TECHNICAL,
             experience_level=ExperienceLevel.MID,

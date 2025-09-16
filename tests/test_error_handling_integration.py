@@ -12,29 +12,23 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-import unittest
 import asyncio
 import json
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
-from datetime import datetime
-
 # Add parent directory to path
 import sys
+import unittest
+from datetime import datetime
 from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
-from src.utils.error_handler import (
-    global_error_handler,
-    ErrorCategory,
-    ErrorSeverity,
-    ErrorContext,
-    ApplicationError,
-    APIError,
-    RateLimitError,
-    ValidationError
-)
 from src.ai.generator import InterviewQuestionGenerator
-from src.models.enums import InterviewType, ExperienceLevel, PromptTechnique, AIModel
-from src.models.simple_schemas import GenerationRequest
+from src.models.enums import (AIModel, ExperienceLevel, InterviewType,
+                              PromptTechnique)
+from src.models.simple_schemas import SimpleGenerationRequest
+from src.utils.error_handler import (APIError, ApplicationError, ErrorCategory,
+                                     ErrorContext, ErrorSeverity,
+                                     RateLimitError, ValidationError,
+                                     global_error_handler)
 
 
 class TestGeneratorErrorHandling(unittest.TestCase):
@@ -47,7 +41,7 @@ class TestGeneratorErrorHandling(unittest.TestCase):
         global_error_handler.clear_error_history()
         
         # Sample generation request
-        self.sample_request = GenerationRequest(
+        self.sample_request = SimpleGenerationRequest(
             job_description="Senior Python Developer at Tech Company",
             interview_type=InterviewType.TECHNICAL,
             experience_level=ExperienceLevel.SENIOR,
@@ -103,7 +97,7 @@ class TestGeneratorErrorHandling(unittest.TestCase):
     async def test_validation_error_handling(self):
         """Test validation error handling."""
         # Create request with invalid data
-        invalid_request = GenerationRequest(
+        invalid_request = SimpleGenerationRequest(
             job_description="",  # Too short
             interview_type=InterviewType.TECHNICAL,
             experience_level=ExperienceLevel.SENIOR,
@@ -213,7 +207,7 @@ class TestAppErrorHandling(unittest.TestCase):
     def test_streamlit_error_display_integration(self, mock_info, mock_warning, mock_error):
         """Test error display integration with Streamlit."""
         from ui.error_display import ErrorDisplayManager
-        
+
         # Create test error
         error = APIError("Test API error")
         context = ErrorContext(operation="streamlit_test")
@@ -412,7 +406,7 @@ class TestErrorHandlingEndToEnd(unittest.TestCase):
         generator.client = mock_client
         
         # Create request
-        request = GenerationRequest(
+        request = SimpleGenerationRequest(
             job_description="Test job description for error flow",
             interview_type=InterviewType.TECHNICAL,
             experience_level=ExperienceLevel.SENIOR,

@@ -1,6 +1,6 @@
 """
 Integration test for cost calculator with existing data models.
-Tests that CostCalculator works properly with CostBreakdown model.
+Tests that CostCalculator works properly with SimpleCostBreakdown model.
 """
 import os
 import sys
@@ -16,7 +16,7 @@ if src_path not in sys.path:
 
 try:
     from models.enums import ExperienceLevel, InterviewType, PromptTechnique
-    from models.simple_schemas import CostBreakdown
+    from models.simple_schemas import SimpleCostBreakdown
     from utils.cost import CostCalculator
     print("✅ All imports successful")
 except ImportError as e:
@@ -25,16 +25,16 @@ except ImportError as e:
 
 
 def test_cost_calculator_with_cost_breakdown_model():
-    """Test that CostCalculator output works with CostBreakdown model"""
-    print("Testing CostCalculator integration with CostBreakdown model...")
+    """Test that CostCalculator output works with SimpleCostBreakdown model"""
+    print("Testing CostCalculator integration with SimpleCostBreakdown model...")
 
     calculator = CostCalculator()
 
     # Calculate cost using calculator
     cost_data = calculator.calculate_cost("gpt-4o", 1000, 500)
 
-    # Create CostBreakdown model from calculator output
-    cost_breakdown = CostBreakdown(
+    # Create SimpleCostBreakdown model from calculator output
+    cost_breakdown = SimpleCostBreakdown(
         input_cost=cost_data["input_cost"],
         output_cost=cost_data["output_cost"],
         total_cost=cost_data["total_cost"],
@@ -49,15 +49,15 @@ def test_cost_calculator_with_cost_breakdown_model():
     assert cost_breakdown.input_tokens == 1000
     assert cost_breakdown.output_tokens == 500
 
-    print("✅ CostCalculator integrates properly with CostBreakdown model")
+    print("✅ CostCalculator integrates properly with SimpleCostBreakdown model")
 
 
 def test_cost_breakdown_validation():
-    """Test that CostBreakdown model validation works correctly"""
-    print("Testing CostBreakdown model validation...")
+    """Test that SimpleCostBreakdown model validation works correctly"""
+    print("Testing SimpleCostBreakdown model validation...")
 
     # Test valid cost breakdown
-    valid_breakdown = CostBreakdown(
+    valid_breakdown = SimpleCostBreakdown(
         input_cost=0.001,
         output_cost=0.002,
         total_cost=0.003,
@@ -68,7 +68,7 @@ def test_cost_breakdown_validation():
 
     # Test negative cost validation
     try:
-        CostBreakdown(
+        SimpleCostBreakdown(
             input_cost=-0.001,
             output_cost=0.002,
             total_cost=0.001,
@@ -81,7 +81,7 @@ def test_cost_breakdown_validation():
 
     # Test total cost validation
     try:
-        CostBreakdown(
+        SimpleCostBreakdown(
             input_cost=0.001,
             output_cost=0.002,
             total_cost=0.005,  # Wrong total
@@ -92,7 +92,7 @@ def test_cost_breakdown_validation():
     except ValueError as e:
         assert "Total cost must equal input_cost + output_cost" in str(e)
 
-    print("✅ CostBreakdown model validation works correctly")
+    print("✅ SimpleCostBreakdown model validation works correctly")
 
 
 def test_multiple_model_calculations():
@@ -103,7 +103,7 @@ def test_multiple_model_calculations():
 
     # Test GPT-4o
     gpt4o_cost = calculator.calculate_cost("gpt-4o", 1000, 1000)
-    gpt4o_breakdown = CostBreakdown(
+    gpt4o_breakdown = SimpleCostBreakdown(
         input_cost=gpt4o_cost["input_cost"],
         output_cost=gpt4o_cost["output_cost"],
         total_cost=gpt4o_cost["total_cost"],
@@ -113,7 +113,7 @@ def test_multiple_model_calculations():
 
     # Test GPT-5
     gpt5_cost = calculator.calculate_cost("gpt-5", 1000, 1000)
-    gpt5_breakdown = CostBreakdown(
+    gpt5_breakdown = SimpleCostBreakdown(
         input_cost=gpt5_cost["input_cost"],
         output_cost=gpt5_cost["output_cost"],
         total_cost=gpt5_cost["total_cost"],
@@ -148,7 +148,7 @@ def test_cumulative_tracking_integration():
 
     for model, input_tokens, output_tokens in sessions:
         cost_data = calculator.add_usage(model, input_tokens, output_tokens)
-        breakdown = CostBreakdown(
+        breakdown = SimpleCostBreakdown(
             input_cost=cost_data["input_cost"],
             output_cost=cost_data["output_cost"],
             total_cost=cost_data["total_cost"],

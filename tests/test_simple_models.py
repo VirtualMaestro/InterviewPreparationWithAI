@@ -8,13 +8,18 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from src.models.simple_schemas import (AISettings, ApplicationState, CostBreakdown,
-                                   GenerationRequest, InterviewResults,
-                                   InterviewSession, SessionSummary)
-from src.models.enums import ExperienceLevel, InterviewType, PromptTechnique
 import sys
 from datetime import datetime
 from pathlib import Path
+
+from src.models.enums import ExperienceLevel, InterviewType, PromptTechnique
+from src.models.simple_schemas import (SimpleAISettings,
+                                       SimpleApplicationState,
+                                       SimpleCostBreakdown,
+                                       SimpleGenerationRequest,
+                                       SimpleInterviewResults,
+                                       SimpleInterviewSession,
+                                       SimpleSessionSummary)
 
 # Add src to Python path
 src_path = Path(__file__).parent / "src"
@@ -25,26 +30,26 @@ def test_ai_settings():
     print("Testing AISettings...")
 
     # Test default values
-    settings = AISettings()
+    settings = SimpleAISettings()
     assert settings.model == "gpt-4o"
     assert settings.temperature == 0.7
     print("  ✓ Default values correct")
 
     # Test custom values
-    settings = AISettings(model="gpt-5", temperature=0.5)
+    settings = SimpleAISettings(model="gpt-5", temperature=0.5)
     assert settings.model == "gpt-5"
     assert settings.temperature == 0.5
     print("  ✓ Custom values work")
 
     # Test validation
     try:
-        AISettings(temperature=3.0)  # Should fail
+        SimpleAISettings(temperature=3.0)  # Should fail
         assert False, "Should have failed validation"
     except ValueError:
         print("  ✓ Temperature validation works")
 
     try:
-        AISettings(model="invalid-model")  # Should fail
+        SimpleAISettings(model="invalid-model")  # Should fail
         assert False, "Should have failed validation"
     except ValueError:
         print("  ✓ Model validation works")
@@ -54,7 +59,7 @@ def test_cost_breakdown():
     """Test CostBreakdown dataclass"""
     print("Testing CostBreakdown...")
 
-    cost = CostBreakdown(
+    cost = SimpleCostBreakdown(
         input_cost=0.001,
         output_cost=0.002,
         total_cost=0.003,
@@ -67,7 +72,7 @@ def test_cost_breakdown():
 
     # Test validation
     try:
-        CostBreakdown(
+        SimpleCostBreakdown(
             input_cost=0.001,
             output_cost=0.002,
             total_cost=0.005,  # Wrong total
@@ -83,7 +88,7 @@ def test_generation_request():
     """Test GenerationRequest dataclass"""
     print("Testing GenerationRequest...")
 
-    request = GenerationRequest(
+    request = SimpleGenerationRequest(
         job_description="Senior Python Developer with Django experience",
         interview_type=InterviewType.TECHNICAL,
         experience_level=ExperienceLevel.SENIOR,
@@ -98,7 +103,7 @@ def test_generation_request():
 
     # Test validation
     try:
-        GenerationRequest(
+        SimpleGenerationRequest(
             job_description="Short",  # Too short
             interview_type=InterviewType.TECHNICAL,
             experience_level=ExperienceLevel.SENIOR,
@@ -113,7 +118,7 @@ def test_interview_results():
     """Test InterviewResults dataclass"""
     print("Testing InterviewResults...")
 
-    cost = CostBreakdown(
+    cost = SimpleCostBreakdown(
         input_cost=0.001,
         output_cost=0.002,
         total_cost=0.003,
@@ -121,7 +126,7 @@ def test_interview_results():
         output_tokens=200
     )
 
-    results = InterviewResults(
+    results = SimpleInterviewResults(
         questions=["Question 1?", "Question 2?"],
         recommendations=["Practice coding", "Review algorithms"],
         cost_breakdown=cost,
@@ -141,8 +146,8 @@ def test_interview_session():
     """Test InterviewSession dataclass"""
     print("Testing InterviewSession...")
 
-    ai_settings = AISettings()
-    session = InterviewSession(
+    ai_settings = SimpleAISettings()
+    session = SimpleInterviewSession(
         id="session-123",
         timestamp=datetime.now(),
         job_description="Senior Python Developer with Django experience",
@@ -162,14 +167,14 @@ def test_application_state():
     """Test ApplicationState dataclass"""
     print("Testing ApplicationState...")
 
-    state = ApplicationState()
+    state = SimpleApplicationState()
     assert state.total_api_calls == 0
     assert state.total_cost == 0.0
     assert state.session_history is not None
     print("  ✓ Default state works")
 
     # Test adding session
-    session = SessionSummary(
+    session = SimpleSessionSummary(
         session_id="test-123",
         timestamp=datetime.now(),
         interview_type=InterviewType.TECHNICAL,
@@ -201,6 +206,39 @@ if __name__ == "__main__":
         print("\n🎉 All simple model tests passed! Data models are working correctly.")
 
     except Exception as e:
+        print(f"\n❌ Test failed: {e}")
+        import traceback
+        traceback.print_exc()
+
+        print("\n🎉 All simple model tests passed! Data models are working correctly.")
+
+    except Exception as e:
+        print(f"\n❌ Test failed: {e}")
+        import traceback
+        traceback.print_exc()
+
+    except Exception as e:
+        print(f"\n❌ Test failed: {e}")
+        import traceback
+        traceback.print_exc()
+
+    except Exception as e:
+        print(f"\n❌ Test failed: {e}")
+        import traceback
+        traceback.print_exc()
+
+    except Exception as e:
+        print(f"\n❌ Test failed: {e}")
+        import traceback
+        traceback.print_exc()
+    except Exception as e:
+        print(f"\n❌ Test failed: {e}")
+        import traceback
+        traceback.print_exc()
+    except Exception as e:
+        print(f"\n❌ Test failed: {e}")
+        import traceback
+        traceback.print_exc()
         print(f"\n❌ Test failed: {e}")
         import traceback
         traceback.print_exc()

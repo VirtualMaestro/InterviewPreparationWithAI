@@ -19,9 +19,9 @@ from src.ai.prompts import PromptLibrary, PromptTemplate, prompt_library
 from src.ai.structured_output import StructuredOutputPrompts
 from src.models.enums import (DifficultyLevel, ExperienceLevel, InterviewType,
                           PromptTechnique, QuestionCategory)
-from src.models.schemas import (AISettings, ApplicationState, CostBreakdown,
-                            GenerationRequest, InterviewResults, Question,
-                            SessionSummary)
+from src.models.simple_schemas import (SimpleAISettings, SimpleApplicationState, SimpleCostBreakdown,
+                            SimpleGenerationRequest, SimpleInterviewResults, SimpleQuestion,
+                            SimpleSessionSummary)
 from src.utils.cost import CostCalculator
 from src.utils.rate_limiter import RateLimiter
 from src.utils.security import SecurityValidator, ValidationResult
@@ -573,10 +573,10 @@ def test_data_model_edge_cases():
     print("\n🧪 Testing Data Model Edge Cases")
     print("-" * 50)
 
-    # Test 1: AISettings boundary values
+    # Test 1: SimpleAISettings boundary values
     try:
         # Test minimum values
-        min_settings = AISettings(
+        min_settings = SimpleAISettings(
             model="gpt-4o",
             temperature=0.0,
             max_tokens=100,
@@ -586,7 +586,7 @@ def test_data_model_edge_cases():
         assert min_settings.temperature == 0.0
 
         # Test maximum values
-        max_settings = AISettings(
+        max_settings = SimpleAISettings(
             model="gpt-5",
             temperature=2.0,
             max_tokens=4000,
@@ -595,30 +595,30 @@ def test_data_model_edge_cases():
         )
         assert max_settings.temperature == 2.0
 
-        print("✅ AISettings boundary values work")
+        print("✅ SimpleAISettings boundary values work")
     except Exception as e:
-        print(f"❌ AISettings boundary test failed: {e}")
+        print(f"❌ SimpleAISettings boundary test failed: {e}")
         raise
 
-    # Test 2: Invalid AISettings values
+    # Test 2: Invalid SimpleAISettings values
     try:
         # Temperature too high
         try:
-            AISettings(temperature=3.0)
+            SimpleAISettings(temperature=3.0)
             assert False, "Should reject temperature > 2.0"
         except ValueError:
             pass
 
         # Negative max_tokens
         try:
-            AISettings(max_tokens=-100)
+            SimpleAISettings(max_tokens=-100)
             assert False, "Should reject negative max_tokens"
         except ValueError:
             pass
 
-        print("✅ AISettings validation works")
+        print("✅ SimpleAISettings validation works")
     except Exception as e:
-        print(f"❌ AISettings validation test failed: {e}")
+        print(f"❌ SimpleAISettings validation test failed: {e}")
         raise
 
     # Test 3: Question model edge cases
@@ -648,10 +648,10 @@ def test_data_model_edge_cases():
         print(f"❌ Question model test failed: {e}")
         raise
 
-    # Test 4: GenerationRequest validation edge cases
+    # Test 4: SimpleGenerationRequest validation edge cases
     try:
         # Minimum question count
-        min_request = GenerationRequest(
+        min_request = SimpleGenerationRequest(
             job_description="A" * 10,  # Minimum length
             interview_type=InterviewType.TECHNICAL,
             experience_level=ExperienceLevel.JUNIOR,
@@ -661,7 +661,7 @@ def test_data_model_edge_cases():
         assert min_request.question_count == 1
 
         # Maximum question count
-        max_request = GenerationRequest(
+        max_request = SimpleGenerationRequest(
             job_description="Senior Developer" * 100,  # Long description
             interview_type=InterviewType.BEHAVIORAL,
             experience_level=ExperienceLevel.LEAD,
@@ -670,9 +670,9 @@ def test_data_model_edge_cases():
         )
         assert max_request.question_count == 20
 
-        print("✅ GenerationRequest edge cases work")
+        print("✅ SimpleGenerationRequest edge cases work")
     except Exception as e:
-        print(f"❌ GenerationRequest test failed: {e}")
+        print(f"❌ SimpleGenerationRequest test failed: {e}")
         raise
 
     print("✅ All Data Model edge cases passed")

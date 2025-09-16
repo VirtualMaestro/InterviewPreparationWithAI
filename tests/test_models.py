@@ -1,9 +1,9 @@
 """
 Test data models and validation schemas
 """
-from src.models.schemas import (AISettings, ApplicationState, CostBreakdown,
-                                GenerationRequest, InterviewResults,
-                                InterviewSession, Question, SessionSummary)
+from src.models.simple_schemas import (SimpleAISettings, SimpleApplicationState, SimpleCostBreakdown,
+                                SimpleGenerationRequest, SimpleInterviewResults,
+                                SimpleInterviewSession, SimpleQuestion, SimpleSessionSummary)
 from src.models.enums import (DifficultyLevel, ExperienceLevel, InterviewType,
                               PromptTechnique, QuestionCategory)
 import sys
@@ -18,12 +18,12 @@ from pydantic import ValidationError
 sys.path.append(str(Path(__file__).parent.parent))
 
 
-class TestAISettings:
-    """Test AISettings model validation"""
+class TestSimpleAISettings:
+    """Test SimpleAISettings model validation"""
 
     def test_default_values(self):
         """Test default AI settings"""
-        settings = AISettings()
+        settings = SimpleAISettings()
         assert settings.model == "gpt-4o"
         assert settings.temperature == 0.7
         assert settings.max_tokens == 2000
@@ -32,7 +32,7 @@ class TestAISettings:
 
     def test_valid_settings(self):
         """Test valid AI settings"""
-        settings = AISettings(
+        settings = SimpleAISettings(
             model="gpt-5",
             temperature=0.5,
             max_tokens=1500,
@@ -45,15 +45,15 @@ class TestAISettings:
     def test_invalid_temperature(self):
         """Test invalid temperature values"""
         with pytest.raises(ValidationError):
-            AISettings(temperature=-0.1)
+            SimpleAISettings(temperature=-0.1)
 
         with pytest.raises(ValidationError):
-            AISettings(temperature=2.1)
+            SimpleAISettings(temperature=2.1)
 
     def test_invalid_model(self):
         """Test invalid model name"""
         with pytest.raises(ValidationError):
-            AISettings(model="gpt-3")
+            SimpleAISettings(model="gpt-3")
 
 
 class TestQuestion:
@@ -100,12 +100,12 @@ class TestQuestion:
             )
 
 
-class TestCostBreakdown:
-    """Test CostBreakdown model validation"""
+class TestSimpleCostBreakdown:
+    """Test SimpleCostBreakdown model validation"""
 
     def test_valid_cost_breakdown(self):
         """Test valid cost breakdown"""
-        cost = CostBreakdown(
+        cost = SimpleCostBreakdown(
             input_cost=0.001,
             output_cost=0.002,
             total_cost=0.003,
@@ -118,7 +118,7 @@ class TestCostBreakdown:
     def test_invalid_total_cost(self):
         """Test invalid total cost calculation"""
         with pytest.raises(ValidationError):
-            CostBreakdown(
+            SimpleCostBreakdown(
                 input_cost=0.001,
                 output_cost=0.002,
                 total_cost=0.005,  # Should be 0.003
@@ -129,7 +129,7 @@ class TestCostBreakdown:
     def test_negative_costs(self):
         """Test negative cost values"""
         with pytest.raises(ValidationError):
-            CostBreakdown(
+            SimpleCostBreakdown(
                 input_cost=-0.001,
                 output_cost=0.002,
                 total_cost=0.001,
@@ -138,12 +138,12 @@ class TestCostBreakdown:
             )
 
 
-class TestInterviewResults:
-    """Test InterviewResults model validation"""
+class TestSimpleInterviewResults:
+    """Test SimpleInterviewResults model validation"""
 
     def test_valid_results(self):
         """Test valid interview results"""
-        cost = CostBreakdown(
+        cost = SimpleCostBreakdown(
             input_cost=0.001,
             output_cost=0.002,
             total_cost=0.003,
@@ -151,7 +151,7 @@ class TestInterviewResults:
             output_tokens=200
         )
 
-        results = InterviewResults(
+        results = SimpleInterviewResults(
             questions=["Question 1?", "Question 2?"],
             recommendations=["Practice coding", "Review algorithms"],
             cost_breakdown=cost,
@@ -167,7 +167,7 @@ class TestInterviewResults:
 
     def test_empty_questions(self):
         """Test empty questions list"""
-        cost = CostBreakdown(
+        cost = SimpleCostBreakdown(
             input_cost=0.001,
             output_cost=0.002,
             total_cost=0.003,
@@ -176,7 +176,7 @@ class TestInterviewResults:
         )
 
         with pytest.raises(ValidationError):
-            InterviewResults(
+            SimpleInterviewResults(
                 questions=[],  # Empty list should fail
                 recommendations=["Practice coding"],
                 cost_breakdown=cost,
@@ -188,7 +188,7 @@ class TestInterviewResults:
 
     def test_too_many_questions(self):
         """Test too many questions"""
-        cost = CostBreakdown(
+        cost = SimpleCostBreakdown(
             input_cost=0.001,
             output_cost=0.002,
             total_cost=0.003,
@@ -200,7 +200,7 @@ class TestInterviewResults:
         questions = [f"Question {i}?" for i in range(21)]
 
         with pytest.raises(ValidationError):
-            InterviewResults(
+            SimpleInterviewResults(
                 questions=questions,
                 recommendations=["Practice coding"],
                 cost_breakdown=cost,
@@ -211,12 +211,12 @@ class TestInterviewResults:
             )
 
 
-class TestGenerationRequest:
-    """Test GenerationRequest model validation"""
+class TestSimpleGenerationRequest:
+    """Test SimpleGenerationRequest model validation"""
 
     def test_valid_request(self):
         """Test valid generation request"""
-        request = GenerationRequest(
+        request = SimpleGenerationRequest(
             job_description="Senior Python Developer with Django experience",
             interview_type=InterviewType.TECHNICAL,
             experience_level=ExperienceLevel.SENIOR,
@@ -231,7 +231,7 @@ class TestGenerationRequest:
     def test_job_description_too_short(self):
         """Test job description too short"""
         with pytest.raises(ValidationError):
-            GenerationRequest(
+            SimpleGenerationRequest(
                 job_description="Short",  # Less than 10 characters
                 interview_type=InterviewType.TECHNICAL,
                 experience_level=ExperienceLevel.SENIOR,
@@ -242,7 +242,7 @@ class TestGenerationRequest:
         """Test job description too long"""
         long_description = "x" * 5001
         with pytest.raises(ValidationError):
-            GenerationRequest(
+            SimpleGenerationRequest(
                 job_description=long_description,
                 interview_type=InterviewType.TECHNICAL,
                 experience_level=ExperienceLevel.SENIOR,
@@ -252,7 +252,7 @@ class TestGenerationRequest:
     def test_malicious_job_description(self):
         """Test job description with malicious content"""
         with pytest.raises(ValidationError):
-            GenerationRequest(
+            SimpleGenerationRequest(
                 job_description="<script>alert('xss')</script> Python Developer",
                 interview_type=InterviewType.TECHNICAL,
                 experience_level=ExperienceLevel.SENIOR,
@@ -262,7 +262,7 @@ class TestGenerationRequest:
     def test_invalid_question_count(self):
         """Test invalid question count"""
         with pytest.raises(ValidationError):
-            GenerationRequest(
+            SimpleGenerationRequest(
                 job_description="Senior Python Developer",
                 interview_type=InterviewType.TECHNICAL,
                 experience_level=ExperienceLevel.SENIOR,
@@ -271,7 +271,7 @@ class TestGenerationRequest:
             )
 
         with pytest.raises(ValidationError):
-            GenerationRequest(
+            SimpleGenerationRequest(
                 job_description="Senior Python Developer",
                 interview_type=InterviewType.TECHNICAL,
                 experience_level=ExperienceLevel.SENIOR,
@@ -280,13 +280,13 @@ class TestGenerationRequest:
             )
 
 
-class TestInterviewSession:
-    """Test InterviewSession dataclass validation"""
+class TestSimpleInterviewSession:
+    """Test SimpleInterviewSession dataclass validation"""
 
     def test_valid_session(self):
         """Test valid interview session"""
-        ai_settings = AISettings()
-        session = InterviewSession(
+        ai_settings = SimpleAISettings()
+        session = SimpleInterviewSession(
             id="session-123",
             timestamp=datetime.now(),
             job_description="Senior Python Developer with Django experience",
@@ -303,10 +303,10 @@ class TestInterviewSession:
 
     def test_invalid_job_description(self):
         """Test invalid job description"""
-        ai_settings = AISettings()
+        ai_settings = SimpleAISettings()
 
         with pytest.raises(ValueError):
-            InterviewSession(
+            SimpleInterviewSession(
                 id="session-123",
                 timestamp=datetime.now(),
                 job_description="Short",  # Too short
@@ -319,10 +319,10 @@ class TestInterviewSession:
 
     def test_invalid_question_count(self):
         """Test invalid question count"""
-        ai_settings = AISettings()
+        ai_settings = SimpleAISettings()
 
         with pytest.raises(ValueError):
-            InterviewSession(
+            SimpleInterviewSession(
                 id="session-123",
                 timestamp=datetime.now(),
                 job_description="Senior Python Developer with Django experience",
@@ -334,12 +334,12 @@ class TestInterviewSession:
             )
 
 
-class TestApplicationState:
-    """Test ApplicationState model validation"""
+class TestSimpleApplicationState:
+    """Test SimpleApplicationState model validation"""
 
     def test_default_state(self):
         """Test default application state"""
-        state = ApplicationState()
+        state = SimpleApplicationState()
 
         assert state.current_session is None
         assert len(state.session_history) == 0
@@ -349,9 +349,9 @@ class TestApplicationState:
 
     def test_add_session(self):
         """Test adding session to state"""
-        state = ApplicationState()
+        state = SimpleApplicationState()
 
-        session = SessionSummary(
+        session = SimpleSessionSummary(
             session_id="test-123",
             timestamp=datetime.now(),
             interview_type=InterviewType.TECHNICAL,
@@ -371,11 +371,11 @@ class TestApplicationState:
 
     def test_session_history_limit(self):
         """Test session history limit enforcement"""
-        state = ApplicationState()
+        state = SimpleApplicationState()
 
         # Add 12 sessions (more than the 10 limit)
         for i in range(12):
-            session = SessionSummary(
+            session = SimpleSessionSummary(
                 session_id=f"test-{i}",
                 timestamp=datetime.now(),
                 interview_type=InterviewType.TECHNICAL,
@@ -399,9 +399,9 @@ if __name__ == "__main__":
     import traceback
 
     test_classes = [
-        TestAISettings, TestQuestion, TestCostBreakdown,
-        TestInterviewResults, TestGenerationRequest,
-        TestInterviewSession, TestApplicationState
+        TestSimpleAISettings, TestQuestion, TestSimpleCostBreakdown,
+        TestSimpleInterviewResults, TestSimpleGenerationRequest,
+        TestSimpleInterviewSession, TestSimpleApplicationState
     ]
 
     total_tests = 0

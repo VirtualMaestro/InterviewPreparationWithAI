@@ -14,8 +14,9 @@ sys.path.insert(0, str(src_path))
 
 try:
     from src.ai.generator import InterviewQuestionGenerator
-    from src.models.simple_schemas import GenerationRequest, AISettings
-    from src.models.enums import InterviewType, ExperienceLevel, PromptTechnique, AIModel
+    from src.models.enums import (AIModel, ExperienceLevel, InterviewType,
+                                  PromptTechnique)
+    from src.models.simple_schemas import SimpleGenerationRequest, SimpleAISettings
 except ImportError as e:
     print(f"Import error: {e}")
     sys.exit(1)
@@ -40,7 +41,7 @@ async def test_generation():
         print("Generator initialized successfully")
 
         # Create a simple request
-        request = GenerationRequest(
+        request = SimpleGenerationRequest(
             job_description="Senior Python Developer position at a tech company",
             interview_type=InterviewType.TECHNICAL,
             experience_level=ExperienceLevel.SENIOR,
@@ -48,7 +49,7 @@ async def test_generation():
             question_count=3
         )
 
-        request.ai_settings = AISettings()
+        request.ai_settings = SimpleAISettings()
         request.ai_settings.temperature = 0.7
 
         print("Making API call...")
@@ -83,6 +84,10 @@ async def test_generation():
         print(f"Test failed: {str(e)}")
         import traceback
         print(f"Traceback: {traceback.format_exc()}")
+
+
+if __name__ == "__main__":
+    asyncio.run(test_generation())        print(f"Traceback: {traceback.format_exc()}")
 
 
 if __name__ == "__main__":
