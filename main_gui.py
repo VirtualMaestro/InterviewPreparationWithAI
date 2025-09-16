@@ -718,7 +718,7 @@ class InterviewPrepGUI:
 
             # Create generation request for mock interview
             generation_request = SimpleGenerationRequest(
-                job_description=f"{mapped_config['job_description']}\n\nIMPORTANT: Generate complete, detailed interview questions, not just topics or titles. Each question should be specific, actionable, and suitable for a live interview format. Examples: 'Can you walk me through how you would design a REST API for a user management system?' rather than just 'System Architecture Design'.",
+                job_description=f"{mapped_config['job_description']}\n\nFORMAT INSTRUCTIONS FOR MOCK INTERVIEW:\n- Generate ONLY complete, specific interview questions\n- Each question must be directly actionable and answerable\n- Use numbered list format: '1. [Complete question here]'\n- Do NOT use category headers or section titles\n- Do NOT include explanatory text after questions\n- Examples of GOOD questions: '1. How would you implement user authentication in a web application?' '2. Explain the differences between REST and GraphQL APIs'\n- Examples of BAD format: 'Advanced Concepts:', 'Technical Skills:', 'System Design Topics'",
                 interview_type=mapped_config["interview_type"],
                 experience_level=mapped_config["experience_level"],
                 prompt_technique=mapped_config["prompt_technique"],

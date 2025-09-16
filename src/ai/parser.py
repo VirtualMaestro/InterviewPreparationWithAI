@@ -759,7 +759,17 @@ class ResponseParser:
             # Try simple numbered pattern as fallback
             numbered_questions = re.findall(r'^\d+\.\s*(.+)$', response, re.MULTILINE)
             for q in numbered_questions:
-                if len(q) >= self.min_question_length:
+                # Filter out category headers and short titles
+                if (len(q) >= self.min_question_length and
+                    not q.endswith(':') and
+                    not any(bad_word in q.lower() for bad_word in [
+                        'concepts', 'skills', 'topics', 'areas', 'sections',
+                        'technical', 'advanced', 'basic', 'fundamental'
+                    ]) and
+                    ('?' in q or any(qw in q.lower() for qw in [
+                        'how', 'what', 'why', 'when', 'where', 'which',
+                        'describe', 'explain', 'implement', 'design', 'can you'
+                    ]))):
                     questions.append(ParsedQuestion(question=q))
                     raw_questions.append(q)
 
