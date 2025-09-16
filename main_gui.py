@@ -799,24 +799,63 @@ class InterviewPrepGUI:
 
             feedback_text = response.choices[0].message.content
 
-            # Parse the response
+            # Parse the response with better multi-line handling
             score = 7  # Default score
             feedback = "Good effort! Keep practicing."
             suggestions = "Continue developing your technical skills."
 
             if feedback_text:
                 lines = feedback_text.split('\n')
+                current_section = None
+                current_content = []
+
                 for line in lines:
                     line = line.strip()
+
                     if line.startswith('SCORE:'):
+                        # Save previous section
+                        if current_section == 'FEEDBACK' and current_content:
+                            feedback = ' '.join(current_content).strip()
+                        elif current_section == 'SUGGESTIONS' and current_content:
+                            suggestions = ' '.join(current_content).strip()
+
+                        # Parse score
                         try:
                             score = int(line.split(':')[1].strip())
                         except:
                             pass
+                        current_section = None
+                        current_content = []
+
                     elif line.startswith('FEEDBACK:'):
-                        feedback = line.split(':', 1)[1].strip()
+                        # Save previous section
+                        if current_section == 'SUGGESTIONS' and current_content:
+                            suggestions = ' '.join(current_content).strip()
+
+                        # Start new section
+                        current_section = 'FEEDBACK'
+                        initial_content = line.split(':', 1)[1].strip()
+                        current_content = [initial_content] if initial_content else []
+
                     elif line.startswith('SUGGESTIONS:'):
-                        suggestions = line.split(':', 1)[1].strip()
+                        # Save previous section
+                        if current_section == 'FEEDBACK' and current_content:
+                            feedback = ' '.join(current_content).strip()
+
+                        # Start new section
+                        current_section = 'SUGGESTIONS'
+                        initial_content = line.split(':', 1)[1].strip()
+                        current_content = [initial_content] if initial_content else []
+
+                    elif current_section and line:
+                        # Continue building current section
+                        current_content.append(line)
+
+                # Don't forget the last section
+                if current_section == 'FEEDBACK' and current_content:
+                    feedback = ' '.join(current_content).strip()
+                elif current_section == 'SUGGESTIONS' and current_content:
+                    suggestions = ' '.join(current_content).strip()
 
             return {
                 "score": score,
