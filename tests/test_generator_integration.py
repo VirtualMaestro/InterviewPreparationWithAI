@@ -21,13 +21,11 @@ import json
 # Add parent directory to path
 import sys
 import unittest
-from dataclasses import dataclass
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
-from src.ai.generator import (APIError, GenerationResult,
-                              InterviewQuestionGenerator, ParsingError,
-                              RateLimitError)
+from src.ai.generator import (GenerationResult,
+                              InterviewQuestionGenerator, ParsingError)
 from src.models.enums import (AIModel, ExperienceLevel, InterviewType,
                               PromptTechnique)
 from src.models.simple_schemas import SimpleGenerationRequest
@@ -46,10 +44,8 @@ class TestGeneratorIntegration(unittest.TestCase):
             job_description="Senior Python Developer at Tech Company",
             interview_type=InterviewType.TECHNICAL,
             experience_level=ExperienceLevel.SENIOR,
-            num_questions=5,
-            temperature=0.7,
-            prompt_technique=PromptTechnique.STRUCTURED_OUTPUT,
-            additional_context={"company_type": "startup"}
+            question_count=5,
+            prompt_technique=PromptTechnique.STRUCTURED_OUTPUT
         )
         
         # Mock API responses

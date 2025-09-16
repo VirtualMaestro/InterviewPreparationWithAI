@@ -17,20 +17,14 @@ from openai import AsyncOpenAI, OpenAI
 from tenacity import (after_log, before_log, retry, retry_if_exception_type,
                       stop_after_attempt, wait_exponential)
 
-from .chain_of_thought import ChainOfThoughtPrompts
-from .few_shot import FewShotPrompts
 from .parser import response_parser
 from .prompts import PromptTemplate, prompt_library
-from .role_based import RoleBasedPrompts
-from .structured_output import StructuredOutputPrompts
-from .zero_shot import ZeroShotPrompts
 from ..models.enums import (AIModel, ExperienceLevel, InterviewType,
                           PromptTechnique)
 from ..models.simple_schemas import (SimpleCostBreakdown,
                                    SimpleGenerationRequest)
 from ..utils.cost import cost_calculator
 from ..utils.error_handler import APIError as AppAPIError
-from ..utils.error_handler import ErrorContext
 from ..utils.error_handler import RateLimitError as AppRateLimitError
 from ..utils.error_handler import (ValidationError, global_error_handler,
                                  handle_async_errors)
@@ -219,57 +213,29 @@ class InterviewQuestionGenerator:
         technique: PromptTechnique
     ) -> PromptTemplate | None:
         """
-        Select appropriate prompt template.
-        
+        Select appropriate prompt template from the prompt library.
+
         Args:
             request: Generation request
             technique: Prompt technique to use
-            
+
         Returns:
             Selected template or None
         """
         try:
-            # Try to get template from prompt library
+            # Get template from prompt library
             template = prompt_library.get_template(
                 technique,
                 request.interview_type,
                 request.experience_level
             )
-            
+
             if template:
                 return template
-            
-            # Fallback to technique-specific methods
-            if technique == PromptTechnique.FEW_SHOT:
-                return FewShotPrompts.get_template(
-                    request.interview_type,
-                    request.experience_level
-                )
-            elif technique == PromptTechnique.CHAIN_OF_THOUGHT:
-                return ChainOfThoughtPrompts.get_template(
-                    request.interview_type,
-                    request.experience_level
-                )
-            elif technique == PromptTechnique.ZERO_SHOT:
-                return ZeroShotPrompts.get_template(
-                    request.interview_type,
-                    request.experience_level
-                )
-            elif technique == PromptTechnique.ROLE_BASED:
-                persona = getattr(request, 'additional_context', {}).get("persona", "neutral")
-                return RoleBasedPrompts.get_persona_template(
-                    persona,
-                    request.interview_type
-                )
-            elif technique == PromptTechnique.STRUCTURED_OUTPUT:
-                return StructuredOutputPrompts.get_template(
-                    request.interview_type,
-                    request.experience_level
-                )
-                
+
         except Exception as e:
             logger.error(f"Error selecting template: {str(e)}")
-            
+
         return None
     
     def _build_prompt(
@@ -561,15 +527,34 @@ class InterviewQuestionGenerator:
                 )
                 
                 # Build result
+                questions_list = parsed_data.get("questions", [])
+                if isinstance(questions_list, list):
+                    limited_questions = questions_list[:request.question_count]
+                else:
+                    limited_questions = []
+
+                recommendations_list = parsed_data.get("recommendations", [])
+                if isinstance(recommendations_list, list):
+                    safe_recommendations = recommendations_list
+                else:
+                    safe_recommendations = []
+
+                # Handle metadata safely
+                parsed_metadata = parsed_data.get("metadata", {})
+                if isinstance(parsed_metadata, dict):
+                    safe_metadata = parsed_metadata
+                else:
+                    safe_metadata = {}
+
                 return GenerationResult(
-                    questions=parsed_data.get("questions", [])[:request.question_count],
-                    recommendations=parsed_data.get("recommendations", []),
+                    questions=limited_questions,
+                    recommendations=safe_recommendations,
                     metadata={
                         "technique": technique.value,
                         "template_name": template.name,
                         "tokens_used": usage.get("total_tokens", 0),
                         "finish_reason": api_response.get("finish_reason", "unknown"),
-                        **parsed_data.get("metadata", {})
+                        **safe_metadata
                     },
                     cost_breakdown=cost_breakdown,
                     raw_response=api_response["content"],
@@ -677,16 +662,6 @@ class InterviewQuestionGenerator:
         Returns:
             Statistics dictionary
         """
-        cumulative_stats = cost_calculator.get_cumulative_stats()
-        return {
-            "model": self.model.value,
-            "total_cost": cumulative_stats.get("total_cost", 0.0),
-            "session_costs": cumulative_stats.get("session_costs", []),
-            "rate_limit_status": rate_limiter.get_rate_limit_status(),
-            "rate_limit_stats": rate_limiter.get_statistics()
-        }        
-        
-       
         cumulative_stats = cost_calculator.get_cumulative_stats()
         return {
             "model": self.model.value,
