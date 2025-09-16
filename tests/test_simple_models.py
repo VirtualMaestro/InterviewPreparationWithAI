@@ -1,17 +1,23 @@
 """
 Test simple data models without Pydantic
 """
-from models.simple_schemas import (AISettings, ApplicationState, CostBreakdown,
+import sys
+from pathlib import Path
+
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+from src.models.simple_schemas import (AISettings, ApplicationState, CostBreakdown,
                                    GenerationRequest, InterviewResults,
                                    InterviewSession, SessionSummary)
-from models.enums import ExperienceLevel, InterviewType, PromptTechnique
+from src.models.enums import ExperienceLevel, InterviewType, PromptTechnique
 import sys
 from datetime import datetime
 from pathlib import Path
 
 # Add src to Python path
 src_path = Path(__file__).parent / "src"
-sys.path.insert(0, str(src_path))
 
 
 def test_ai_settings():

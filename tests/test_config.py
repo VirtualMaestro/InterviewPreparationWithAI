@@ -1,15 +1,14 @@
 """
 Test configuration management
 """
-# Add project root to path for imports
-from config import Config
 from pathlib import Path
 import sys
-sys.path.append(str(Path(__file__).parent.parent / "src"))
-
 
 # Add project root to path for imports
 sys.path.append(str(Path(__file__).parent.parent))
+sys.path.append(str(Path(__file__).parent.parent / "src"))
+
+from src.config import Config
 
 
 def test_config_initialization():

@@ -2,6 +2,13 @@
 Tests for uncovered functionality and advanced scenarios.
 Tests complex workflows, error recovery, and advanced features.
 """
+import sys
+from pathlib import Path
+
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
 import json
 import os
 import sys
@@ -9,20 +16,20 @@ import time
 import traceback
 from pathlib import Path
 
-from ai.chain_of_thought import ChainOfThoughtPrompts
-from ai.few_shot import FewShotPrompts
-from ai.prompts import PromptTemplate, prompt_library
-from ai.role_based import RoleBasedPrompts
-from ai.structured_output import StructuredOutputPrompts
-from ai.zero_shot import ZeroShotPrompts
-from models.enums import (DifficultyLevel, ExperienceLevel, InterviewType,
+from src.ai.chain_of_thought import ChainOfThoughtPrompts
+from src.ai.few_shot import FewShotPrompts
+from src.ai.prompts import PromptTemplate, prompt_library
+from src.ai.role_based import RoleBasedPrompts
+from src.ai.structured_output import StructuredOutputPrompts
+from src.ai.zero_shot import ZeroShotPrompts
+from src.models.enums import (DifficultyLevel, ExperienceLevel, InterviewType,
                           PromptTechnique, QuestionCategory)
-from models.schemas import (AISettings, ApplicationState, CostBreakdown,
+from src.models.schemas import (AISettings, ApplicationState, CostBreakdown,
                             GenerationRequest, InterviewResults, Question,
                             SessionSummary)
-from utils.cost import CostCalculator
-from utils.rate_limiter import RateLimiter
-from utils.security import SecurityValidator
+from src.utils.cost import CostCalculator
+from src.utils.rate_limiter import RateLimiter
+from src.utils.security import SecurityValidator
 
 # Add src to path for imports
 test_dir = Path(__file__).parent
@@ -387,10 +394,11 @@ def test_advanced_data_scenarios():
         app_state = ApplicationState()
 
         # Add multiple sessions
+        from datetime import datetime
         for i in range(15):  # More than the 10-session limit
             session = SessionSummary(
                 session_id=f"session_{i}",
-                timestamp=time.time(),
+                timestamp=datetime.now(),
                 interview_type=InterviewType.TECHNICAL,
                 experience_level=ExperienceLevel.SENIOR,
                 question_count=5,

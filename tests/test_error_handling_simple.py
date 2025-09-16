@@ -4,6 +4,13 @@ Unit tests for the comprehensive error handling system.
 Tests error classification, logging, recovery mechanisms, and user message generation.
 """
 
+import sys
+from pathlib import Path
+
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
 import unittest
 import logging
 import asyncio
@@ -13,9 +20,8 @@ from datetime import datetime, timedelta
 # Add parent directory to path
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from utils.error_handler import (
+from src.utils.error_handler import (
     ErrorHandler,
     ErrorCategory,
     ErrorSeverity,

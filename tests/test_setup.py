@@ -1,13 +1,19 @@
 """
 Simple test to verify project setup
 """
-from utils.logger import setup_logging
-from config import Config
+import sys
+from pathlib import Path
+
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+from src.utils.logger import setup_logging
+from src.config import Config
 import sys
 from pathlib import Path
 
 # Add src to path BEFORE imports
-sys.path.append(str(Path(__file__).parent.parent / "src"))
 
 
 def test_config():

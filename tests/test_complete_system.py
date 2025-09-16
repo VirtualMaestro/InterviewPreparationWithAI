@@ -2,6 +2,13 @@
 Complete system test suite for AI Interview Prep Application.
 Tests environment setup, all libraries, and complete functionality.
 """
+import sys
+from pathlib import Path
+
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
 import importlib
 import importlib.util
 import json
@@ -9,11 +16,11 @@ import sys
 import traceback
 from pathlib import Path
 
-from ai.prompts import PromptTemplate, prompt_library
-from ai.structured_output import StructuredOutputPrompts
-from models.enums import (DifficultyLevel, ExperienceLevel, InterviewType,
+from src.ai.prompts import PromptTemplate, prompt_library
+from src.ai.structured_output import StructuredOutputPrompts
+from src.models.enums import (DifficultyLevel, ExperienceLevel, InterviewType,
                           PromptTechnique, QuestionCategory)
-from models.schemas import (AISettings, ApplicationState, CostBreakdown,
+from src.models.schemas import (AISettings, ApplicationState, CostBreakdown,
                             GenerationRequest, InterviewResults, Question,
                             SessionSummary)
 
@@ -23,7 +30,7 @@ project_root = test_dir.parent
 src_path = project_root / 'src'
 
 if str(src_path) not in sys.path:
-    sys.path.insert(0, str(src_path))
+    sys.path.append(str(src_path))
 
 # Import project modules at top level
 

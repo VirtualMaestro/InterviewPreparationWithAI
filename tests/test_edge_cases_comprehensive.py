@@ -2,22 +2,29 @@
 Comprehensive edge case tests for AI Interview Prep Application.
 Tests boundary conditions, error scenarios, and uncovered functionality.
 """
+import sys
+from pathlib import Path
+
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
 import json
 import os
 import sys
 import traceback
 from pathlib import Path
 
-from ai.prompts import PromptLibrary, PromptTemplate, prompt_library
-from ai.structured_output import StructuredOutputPrompts
-from models.enums import (DifficultyLevel, ExperienceLevel, InterviewType,
+from src.ai.prompts import PromptLibrary, PromptTemplate, prompt_library
+from src.ai.structured_output import StructuredOutputPrompts
+from src.models.enums import (DifficultyLevel, ExperienceLevel, InterviewType,
                           PromptTechnique, QuestionCategory)
-from models.schemas import (AISettings, ApplicationState, CostBreakdown,
+from src.models.schemas import (AISettings, ApplicationState, CostBreakdown,
                             GenerationRequest, InterviewResults, Question,
                             SessionSummary)
-from utils.cost import CostCalculator
-from utils.rate_limiter import RateLimiter
-from utils.security import SecurityValidator, ValidationResult
+from src.utils.cost import CostCalculator
+from src.utils.rate_limiter import RateLimiter
+from src.utils.security import SecurityValidator, ValidationResult
 
 # Add src to path for imports
 test_dir = Path(__file__).parent

@@ -1,17 +1,23 @@
 """
 Simple test runner for data models
 """
-from models.schemas import (AISettings, ApplicationState, CostBreakdown,
+import sys
+from pathlib import Path
+
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+from src.models.schemas import (AISettings, ApplicationState, CostBreakdown,
                             GenerationRequest, InterviewResults,
                             InterviewSession, Question, SessionSummary)
-from models.enums import (DifficultyLevel, ExperienceLevel, InterviewType,
+from src.models.enums import (DifficultyLevel, ExperienceLevel, InterviewType,
                           PromptTechnique, QuestionCategory)
 import sys
 from datetime import datetime
 from pathlib import Path
 
 # Add src to Python path BEFORE imports
-sys.path.append(str(Path(__file__).parent / "src"))
 
 
 def test_ai_settings():

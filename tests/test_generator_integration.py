@@ -9,6 +9,13 @@ Tests the complete generation workflow including:
 - Cost tracking
 """
 
+import sys
+from pathlib import Path
+
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
 import asyncio
 import json
 import unittest
@@ -18,22 +25,21 @@ from dataclasses import dataclass
 # Add parent directory to path
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from ai.generator import (
+from src.ai.generator import (
     InterviewQuestionGenerator,
     GenerationResult,
     APIError,
     ParsingError,
     RateLimitError
 )
-from models.enums import (
+from src.models.enums import (
     InterviewType,
     ExperienceLevel,
     PromptTechnique,
     AIModel
 )
-from models.simple_schemas import GenerationRequest
+from src.models.simple_schemas import GenerationRequest
 
 
 class TestGeneratorIntegration(unittest.TestCase):

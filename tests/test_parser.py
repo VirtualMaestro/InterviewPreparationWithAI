@@ -9,21 +9,27 @@ Tests cover:
 - Edge cases and error handling
 """
 
+import sys
+from pathlib import Path
+
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
 import unittest
 import json
 import sys
 from pathlib import Path
 
 # Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from ai.parser import (
+from src.ai.parser import (
     ResponseParser,
     ParsedResponse,
     ParsedQuestion,
     ParseStrategy
 )
-from models.enums import (
+from src.models.enums import (
     InterviewType,
     ExperienceLevel,
     DifficultyLevel,

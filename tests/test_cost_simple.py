@@ -4,7 +4,7 @@ Tests CostCalculator functionality without pytest dependencies.
 """
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 
 # Add src to path for imports - use absolute path resolution
 test_dir = os.path.dirname(os.path.abspath(__file__))
@@ -20,10 +20,10 @@ if src_path not in sys.path:
     sys.path.insert(0, src_path)
 
 try:
-    from utils.cost import CostCalculator, ModelPricing
-    print("✅ Import successful")
+    from utils.cost import CostCalculator
+    print("[SUCCESS] Import successful")
 except ImportError as e:
-    print(f"❌ Import failed: {e}")
+    print(f"[ERROR] Import failed: {e}")
     print(
         f"Available in utils: {os.listdir(os.path.join(src_path, 'utils')) if os.path.exists(os.path.join(src_path, 'utils')) else 'utils dir not found'}")
     sys.exit(1)
@@ -51,7 +51,7 @@ def test_model_pricing_constants():
     assert gpt5_pricing.output_cost_per_1k_tokens == 0.020
     assert gpt5_pricing.model_name == "gpt-5"
 
-    print("✅ Model pricing constants test passed")
+    print("[PASS] Model pricing constants test passed")
 
 
 def test_basic_cost_calculation():
@@ -73,7 +73,7 @@ def test_basic_cost_calculation():
     assert result["input_tokens"] == 1000
     assert result["output_tokens"] == 500
 
-    print("✅ Basic cost calculation test passed")
+    print("[PASS] Basic cost calculation test passed")
 
 
 def test_gpt5_cost_calculation():
@@ -95,7 +95,7 @@ def test_gpt5_cost_calculation():
     assert result["input_tokens"] == 2000
     assert result["output_tokens"] == 1000
 
-    print("✅ GPT-5 cost calculation test passed")
+    print("[PASS] GPT-5 cost calculation test passed")
 
 
 def test_precision_and_rounding():
@@ -116,7 +116,7 @@ def test_precision_and_rounding():
     assert result["output_cost"] == round(expected_output_cost, 6)
     assert result["total_cost"] == round(expected_total, 6)
 
-    print("✅ Precision and rounding test passed")
+    print("[PASS] Precision and rounding test passed")
 
 
 def test_zero_tokens():
@@ -143,7 +143,7 @@ def test_zero_tokens():
     assert result["output_cost"] == 0.0
     assert result["total_cost"] == 0.0
 
-    print("✅ Zero token scenarios test passed")
+    print("[PASS] Zero token scenarios test passed")
 
 
 def test_error_handling():
@@ -173,7 +173,7 @@ def test_error_handling():
     except ValueError as e:
         assert "Token counts cannot be negative" in str(e)
 
-    print("✅ Error handling test passed")
+    print("[PASS] Error handling test passed")
 
 
 def test_cumulative_tracking():
@@ -206,7 +206,7 @@ def test_cumulative_tracking():
     assert stats["session_count"] == 2
     assert stats["average_cost_per_session"] == round(expected_total / 2, 6)
 
-    print("✅ Cumulative tracking test passed")
+    print("[PASS] Cumulative tracking test passed")
 
 
 def test_reset_tracking():
@@ -237,7 +237,7 @@ def test_reset_tracking():
     assert stats_after["average_cost_per_session"] == 0.0
     assert stats_after["last_reset"] >= reset_time
 
-    print("✅ Tracking reset test passed")
+    print("[PASS] Tracking reset test passed")
 
 
 def test_model_pricing_info():
@@ -268,7 +268,7 @@ def test_model_pricing_info():
     except ValueError as e:
         assert "Unsupported model" in str(e)
 
-    print("✅ Model pricing info test passed")
+    print("[PASS] Model pricing info test passed")
 
 
 def test_cost_estimation():
@@ -287,7 +287,7 @@ def test_cost_estimation():
     assert stats["session_count"] == 0
     assert stats["total_cost"] == 0.0
 
-    print("✅ Cost estimation test passed")
+    print("[PASS] Cost estimation test passed")
 
 
 def test_cost_display_formatting():
@@ -307,7 +307,7 @@ def test_cost_display_formatting():
 
     assert formatted == expected
 
-    print("✅ Cost display formatting test passed")
+    print("[PASS] Cost display formatting test passed")
 
 
 def test_large_token_counts():
@@ -327,12 +327,12 @@ def test_large_token_counts():
     assert result["output_cost"] == 0.50
     assert result["total_cost"] == 0.75
 
-    print("✅ Large token counts test passed")
+    print("[PASS] Large token counts test passed")
 
 
 def run_all_tests():
     """Run all cost calculator tests"""
-    print("🧪 Running Cost Calculator Tests")
+    print("[TEST] Running Cost Calculator Tests")
     print("=" * 50)
 
     try:
@@ -350,11 +350,11 @@ def run_all_tests():
         test_large_token_counts()
 
         print("=" * 50)
-        print("🎉 All Cost Calculator tests passed!")
+        print("[SUCCESS] All Cost Calculator tests passed!")
         return True
 
     except Exception as e:
-        print(f"❌ Test failed: {e}")
+        print(f"[FAIL] Test failed: {e}")
         import traceback
         traceback.print_exc()
         return False

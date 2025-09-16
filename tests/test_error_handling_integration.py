@@ -5,6 +5,13 @@ Tests error handling across the entire application stack including
 AI generator, API calls, UI components, and recovery mechanisms.
 """
 
+import sys
+from pathlib import Path
+
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
 import unittest
 import asyncio
 import json
@@ -14,9 +21,8 @@ from datetime import datetime
 # Add parent directory to path
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from utils.error_handler import (
+from src.utils.error_handler import (
     global_error_handler,
     ErrorCategory,
     ErrorSeverity,
@@ -26,9 +32,9 @@ from utils.error_handler import (
     RateLimitError,
     ValidationError
 )
-from ai.generator import InterviewQuestionGenerator
-from models.enums import InterviewType, ExperienceLevel, PromptTechnique, AIModel
-from models.simple_schemas import GenerationRequest
+from src.ai.generator import InterviewQuestionGenerator
+from src.models.enums import InterviewType, ExperienceLevel, PromptTechnique, AIModel
+from src.models.simple_schemas import GenerationRequest
 
 
 class TestGeneratorErrorHandling(unittest.TestCase):

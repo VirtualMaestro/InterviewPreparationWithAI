@@ -4,15 +4,21 @@ Simple unit tests for AI Question Generator.
 Basic tests without complex mocking for core functionality.
 """
 
+import sys
+from pathlib import Path
+
+# Add src to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
 import unittest
 import json
 import sys
 from pathlib import Path
 
 # Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from ai.generator import (
+from src.ai.generator import (
     InterviewQuestionGenerator,
     GeneratorError,
     APIError,
@@ -20,14 +26,14 @@ from ai.generator import (
     RateLimitError,
     GenerationResult
 )
-from models.enums import (
+from src.models.enums import (
     InterviewType,
     ExperienceLevel,
     PromptTechnique,
     AIModel
 )
-from models.simple_schemas import GenerationRequest
-from ai.prompts import PromptTemplate
+from src.models.simple_schemas import GenerationRequest
+from src.ai.prompts import PromptTemplate
 
 
 class TestGeneratorSimple(unittest.TestCase):
