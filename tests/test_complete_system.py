@@ -16,13 +16,12 @@ import sys
 import traceback
 from pathlib import Path
 
-from src.ai.prompts import PromptTemplate, prompt_library
+from src.ai.prompts import prompt_library
 from src.ai.structured_output import StructuredOutputPrompts
 from src.models.enums import (DifficultyLevel, ExperienceLevel, InterviewType,
                           PromptTechnique, QuestionCategory)
-from src.models.simple_schemas import (SimpleAISettings, SimpleApplicationState, SimpleCostBreakdown,
-                            SimpleGenerationRequest, SimpleInterviewResults, SimpleQuestion,
-                            SimpleSessionSummary)
+from src.models.simple_schemas import (SimpleAISettings, SimpleGenerationRequest)
+from src.models.schemas import Question
 
 # Add src to path for imports
 test_dir = Path(__file__).parent
@@ -351,8 +350,12 @@ def run_existing_test_suites():
                 # Import and run the test
                 spec = importlib.util.spec_from_file_location(
                     "test_module", test_path)
+
+                if spec is None or spec.loader is None:
+                    raise ValueError(f"{spec} is null")
+
                 test_module = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(test_module)
+                spec.loader.exec_module(test_module) 
 
                 if hasattr(test_module, 'run_all_tests'):
                     result = test_module.run_all_tests()
