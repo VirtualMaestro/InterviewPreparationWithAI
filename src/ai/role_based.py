@@ -4,8 +4,8 @@ Implements interviewer persona templates with company type integration.
 """
 from typing import Dict, List, Optional
 
-from ai.prompts import PromptTemplate, prompt_library
-from models.enums import ExperienceLevel, InterviewType, PromptTechnique
+from ..models.enums import InterviewType, PromptTechnique
+from .prompts import PromptTemplate, prompt_library
 
 
 class RoleBasedPromptTemplate(PromptTemplate):
@@ -56,7 +56,7 @@ class RoleBasedPrompts:
     """
 
     # Storage for role-based templates
-    _role_templates: Dict[str, RoleBasedPromptTemplate] = {}
+    _role_templates: dict[str, RoleBasedPromptTemplate] = {}
 
     # Persona definitions with characteristics
     PERSONAS = {
@@ -190,7 +190,7 @@ class RoleBasedPrompts:
         return recommended
 
     @classmethod
-    def _create_persona_template(cls, persona: str, interview_type: InterviewType) -> PromptTemplate:
+    def _create_persona_template(cls, persona: str, interview_type: InterviewType) -> RoleBasedPromptTemplate:
         """Create a Role-Based template for specific persona and interview type"""
         persona_info = cls.PERSONAS[persona]
 

@@ -2,9 +2,7 @@
 Few-Shot Learning prompt implementation for interview question generation.
 Provides example-based guidance for consistent, high-quality question generation.
 """
-from typing import Dict, List
-
-from models.enums import ExperienceLevel, InterviewType, PromptTechnique
+from src.models.enums import ExperienceLevel, InterviewType, PromptTechnique
 
 from .prompts import PromptTemplate, prompt_library
 

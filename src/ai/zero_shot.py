@@ -2,9 +2,9 @@
 Zero-Shot prompt implementation for interview question generation.
 Provides direct, concise prompts for immediate question generation without examples or reasoning.
 """
-from typing import Dict
+from typing import Any
 
-from models.enums import ExperienceLevel, InterviewType, PromptTechnique
+from src.models.enums import ExperienceLevel, InterviewType, PromptTechnique
 
 from .prompts import PromptTemplate, prompt_library
 
@@ -138,11 +138,11 @@ Questions:""",
             experience_level=ExperienceLevel.JUNIOR,
             template="""Generate {question_count} behavioral interview questions for a {experience_level} position.
 
-Job Description: {job_description}
+            Job Description: {job_description}
 
-Create behavioral questions that assess learning ability, collaboration skills, communication, and professional growth. Questions should be appropriate for someone with 1-2 years of experience and focus on individual contributor scenarios.
+            Create behavioral questions that assess learning ability, collaboration skills, communication, and professional growth. Questions should be appropriate for someone with 1-2 years of experience and focus on individual contributor scenarios.
 
-Questions:""",
+            Questions:""",
             metadata={
                 "difficulty": "entry_level",
                 "approach": "direct_generation",
@@ -273,7 +273,7 @@ Questions for the Employer:""",
         prompt_library.register_template(reverse_generic)
 
     @staticmethod
-    def get_fallback_template(interview_type: InterviewType, experience_level: ExperienceLevel = None) -> PromptTemplate:
+    def get_fallback_template(interview_type: InterviewType, experience_level: ExperienceLevel) -> PromptTemplate:
         """
         Get Zero-Shot template as fallback when other techniques fail.
 
@@ -298,7 +298,7 @@ Questions for the Employer:""",
         return template
 
     @staticmethod
-    def create_emergency_fallback(interview_type: InterviewType, experience_level: ExperienceLevel = None) -> PromptTemplate:
+    def create_emergency_fallback(interview_type: InterviewType, experience_level: ExperienceLevel) -> PromptTemplate:
         """
         Create an emergency fallback template when no Zero-Shot template exists.
 
@@ -334,7 +334,7 @@ Questions:""",
         return emergency_template
 
     @staticmethod
-    def is_fallback_needed(primary_technique: PromptTechnique, interview_type: InterviewType, experience_level: ExperienceLevel = None) -> bool:
+    def is_fallback_needed(primary_technique: PromptTechnique, interview_type: InterviewType, experience_level: ExperienceLevel ) -> bool:
         """
         Check if Zero-Shot fallback is needed when primary technique fails.
 
@@ -359,7 +359,7 @@ Questions:""",
         return zero_shot_template is not None
 
     @staticmethod
-    def get_template_comparison_info() -> Dict[str, any]:
+    def get_template_comparison_info() -> dict[str, Any]:
         """
         Get information comparing Zero-Shot templates with other techniques.
 
@@ -403,7 +403,7 @@ Questions:""",
         }
 
     @staticmethod
-    def _check_fallback_coverage(interview_type: InterviewType) -> Dict[str, bool]:
+    def _check_fallback_coverage(interview_type: InterviewType) -> dict[str, bool]:
         """Check fallback coverage for an interview type"""
         coverage = {}
 

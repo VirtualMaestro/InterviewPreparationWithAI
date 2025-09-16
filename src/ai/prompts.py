@@ -3,9 +3,9 @@ Prompt template infrastructure for AI interview question generation.
 Provides template management, variable substitution, and technique selection.
 """
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from models.enums import ExperienceLevel, InterviewType, PromptTechnique
+from src.models.enums import ExperienceLevel, InterviewType, PromptTechnique
 
 
 @dataclass
@@ -18,17 +18,17 @@ class PromptTemplate:
     name: str
     technique: PromptTechnique
     interview_type: InterviewType
-    experience_level: Optional[ExperienceLevel]
+    experience_level: ExperienceLevel | None
     template: str
-    variables: List[str] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    variables: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
         """Extract variables from template after initialization"""
         if not self.variables:
             self.variables = self._extract_variables()
 
-    def _extract_variables(self) -> List[str]:
+    def _extract_variables(self) -> list[str]:
         """Extract variable names from template string"""
         import re
 
@@ -72,7 +72,7 @@ class PromptTemplate:
         except KeyError as e:
             raise ValueError(f"Template formatting error: {e}")
 
-    def validate_variables(self, variables: Dict[str, Any]) -> bool:
+    def validate_variables(self, variables: dict[str, Any]) -> bool:
         """
         Validate that all required variables are provided.
 
@@ -84,7 +84,7 @@ class PromptTemplate:
         """
         return all(var in variables for var in self.variables)
 
-    def get_sample_variables(self) -> Dict[str, str]:
+    def get_sample_variables(self) -> dict[str, str]:
         """
         Get sample variable values for testing.
 
@@ -117,7 +117,7 @@ class PromptLibrary:
 
     def __init__(self):
         """Initialize empty prompt library"""
-        self.templates: Dict[str, PromptTemplate] = {}
+        self.templates: dict[str, PromptTemplate] = {}
         self._initialize_default_templates()
 
     def register_template(self, template: PromptTemplate) -> None:
@@ -138,8 +138,8 @@ class PromptLibrary:
         self,
         technique: PromptTechnique,
         interview_type: InterviewType,
-        experience_level: Optional[ExperienceLevel] = None
-    ) -> Optional[PromptTemplate]:
+        experience_level: ExperienceLevel | None = None
+    ) -> PromptTemplate | None:
         """
         Get template by technique, interview type, and experience level.
 
@@ -165,9 +165,9 @@ class PromptLibrary:
 
     def list_templates(
         self,
-        technique: Optional[PromptTechnique] = None,
-        interview_type: Optional[InterviewType] = None
-    ) -> List[PromptTemplate]:
+        technique: PromptTechnique | None = None,
+        interview_type: InterviewType | None = None
+    ) -> list[PromptTemplate]:
         """
         List templates matching optional filters.
 
@@ -189,7 +189,7 @@ class PromptLibrary:
 
         return templates
 
-    def get_available_techniques(self, interview_type: InterviewType) -> List[PromptTechnique]:
+    def get_available_techniques(self, interview_type: InterviewType) -> list[PromptTechnique]:
         """
         Get available prompt techniques for an interview type.
 
@@ -210,7 +210,7 @@ class PromptLibrary:
         self,
         technique: PromptTechnique,
         interview_type: InterviewType,
-        experience_level: Optional[ExperienceLevel]
+        experience_level: ExperienceLevel | None
     ) -> str:
         """Generate unique key for template storage"""
         exp_level = experience_level.value if experience_level else "generic"
@@ -222,7 +222,7 @@ class PromptLibrary:
         # in subsequent tasks (6.2 through 6.6)
         pass
 
-    def get_template_info(self) -> Dict[str, Any]:
+    def get_template_info(self) -> dict[str, Any]:
         """
         Get comprehensive information about all templates.
 
@@ -250,7 +250,7 @@ class PromptLibrary:
             "template_keys": list(self.templates.keys())
         }
 
-    def validate_template_coverage(self) -> Dict[str, Any]:
+    def validate_template_coverage(self) -> dict[str, Any]:
         """
         Validate that all required combinations have templates.
 

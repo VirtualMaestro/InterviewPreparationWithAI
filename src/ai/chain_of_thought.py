@@ -2,9 +2,8 @@
 Chain-of-Thought prompt implementation for interview question generation.
 Provides step-by-step reasoning process for systematic question creation.
 """
-from typing import Dict, List
 
-from models.enums import ExperienceLevel, InterviewType, PromptTechnique
+from src.models.enums import ExperienceLevel, InterviewType, PromptTechnique
 
 from .prompts import PromptTemplate, prompt_library
 
