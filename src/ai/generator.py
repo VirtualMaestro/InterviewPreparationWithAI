@@ -146,7 +146,7 @@ class InterviewQuestionGenerator:
             context: ErrorContext = ErrorContext(
                 operation="api_call",
                 additional_info={
-                    "rate_limit_status" : asdict(status)
+                    "rate_limit_status" : asdict(status),
                     "model": self.model.value
                 }
             )
