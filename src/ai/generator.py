@@ -8,51 +8,34 @@ using various prompt engineering techniques with retry mechanisms and fallback s
 import asyncio
 import json
 import logging
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Union
-from enum import Enum
+from dataclasses import asdict, dataclass
+from src.utils.error_handler import ErrorContext
+from src.utils.rate_limiter import RateLimitStatus
+from typing import Any
 
 from openai import AsyncOpenAI, OpenAI
-from tenacity import (
-    retry,
-    stop_after_attempt,
-    wait_exponential,
-    retry_if_exception_type,
-    before_log,
-    after_log
-)
+from tenacity import (after_log, before_log, retry, retry_if_exception_type,
+                      stop_after_attempt, wait_exponential)
 
-from models.enums import (
-    InterviewType,
-    ExperienceLevel,
-    PromptTechnique,
-    AIModel
-)
-from models.simple_schemas import (
-    InterviewSession,
-    InterviewResults,
-    GenerationRequest,
-    CostBreakdown
-)
-from utils.cost import cost_calculator
-from utils.rate_limiter import rate_limiter
-from utils.security import SecurityValidator
-from utils.error_handler import (
-    global_error_handler, 
-    handle_async_errors, 
-    ErrorContext,
-    APIError as AppAPIError,
-    RateLimitError as AppRateLimitError,
-    ValidationError,
-    ErrorCategory
-)
-from ai.prompts import prompt_library, PromptTemplate
-from ai.few_shot import FewShotPrompts
-from ai.chain_of_thought import ChainOfThoughtPrompts
-from ai.zero_shot import ZeroShotPrompts
-from ai.role_based import RoleBasedPrompts
-from ai.structured_output import StructuredOutputPrompts
-from ai.parser import response_parser, ParseStrategy
+from .chain_of_thought import ChainOfThoughtPrompts
+from .few_shot import FewShotPrompts
+from .parser import response_parser
+from .prompts import PromptTemplate, prompt_library
+from .role_based import RoleBasedPrompts
+from .structured_output import StructuredOutputPrompts
+from .zero_shot import ZeroShotPrompts
+from ..models.enums import (AIModel, ExperienceLevel, InterviewType,
+                          PromptTechnique)
+from ..models.simple_schemas import (SimpleCostBreakdown,
+                                   SimpleGenerationRequest)
+from ..utils.cost import cost_calculator
+from ..utils.error_handler import APIError as AppAPIError
+from ..utils.error_handler import ErrorContext
+from ..utils.error_handler import RateLimitError as AppRateLimitError
+from ..utils.error_handler import (ValidationError, global_error_handler,
+                                 handle_async_errors)
+from ..utils.rate_limiter import rate_limiter
+from ..utils.security import SecurityValidator
 
 logger = logging.getLogger(__name__)
 
@@ -80,15 +63,15 @@ class RateLimitError(GeneratorError):
 @dataclass
 class GenerationResult:
     """Result of question generation."""
-    questions: List[str]
-    recommendations: List[str]
-    metadata: Dict[str, Any]
-    cost_breakdown: CostBreakdown
+    questions: list[str]
+    recommendations: list[str]
+    metadata: dict[str, Any]
+    cost_breakdown: SimpleCostBreakdown
     raw_response: str
     technique_used: PromptTechnique
     model_used: AIModel
     success: bool
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
 
 class InterviewQuestionGenerator:
@@ -141,7 +124,7 @@ class InterviewQuestionGenerator:
         prompt: str,
         temperature: float = 0.7,
         max_tokens: int = 2000
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Make API call with retry logic.
         
@@ -159,11 +142,11 @@ class InterviewQuestionGenerator:
         """
         # Check rate limit
         if not rate_limiter.can_make_call():
-            status = rate_limiter.get_rate_limit_status()
-            context = ErrorContext(
+            status: RateLimitStatus = rate_limiter.get_rate_limit_status()
+            context: ErrorContext = ErrorContext(
                 operation="api_call",
                 additional_info={
-                    "rate_limit_status": status._asdict() if hasattr(status, '_asdict') else str(status),
+                    "rate_limit_status" : asdict(status)
                     "model": self.model.value
                 }
             )
@@ -189,19 +172,30 @@ class InterviewQuestionGenerator:
                 timeout=30  # 30 second timeout
             )
             
-            # Extract response data
+            # Extract response data with proper error checking
+            if not response.choices or len(response.choices) == 0:
+                raise ValueError("API response contains no choices")
+
+            choice = response.choices[0]
+            if not hasattr(choice, 'message') or not hasattr(choice.message, 'content'):
+                raise ValueError("API response choice missing message content")
+
+            content = choice.message.content
+            if content is None:
+                raise ValueError("API response content is None")
+
             result = {
-                "content": response.choices[0].message.content,
+                "content": content,
                 "usage": {
-                    "prompt_tokens": response.usage.prompt_tokens,
-                    "completion_tokens": response.usage.completion_tokens,
-                    "total_tokens": response.usage.total_tokens
+                    "prompt_tokens": response.usage.prompt_tokens if response.usage else 0,
+                    "completion_tokens": response.usage.completion_tokens if response.usage else 0,
+                    "total_tokens": response.usage.total_tokens if response.usage else 0
                 },
-                "model": response.model,
-                "finish_reason": response.choices[0].finish_reason
+                "model": response.model if hasattr(response, 'model') else self.model.value,
+                "finish_reason": choice.finish_reason if hasattr(choice, 'finish_reason') else "unknown"
             }
             
-            logger.debug(f"API call successful: {result['usage']['total_tokens']} tokens")
+            # logger.debug(f"API call successful: {result['usage']['total_tokens']} tokens")
             return result
             
         except asyncio.TimeoutError:
@@ -221,9 +215,9 @@ class InterviewQuestionGenerator:
     
     def _select_prompt_template(
         self,
-        request: GenerationRequest,
+        request: SimpleGenerationRequest,
         technique: PromptTechnique
-    ) -> Optional[PromptTemplate]:
+    ) -> PromptTemplate | None:
         """
         Select appropriate prompt template.
         
@@ -280,7 +274,7 @@ class InterviewQuestionGenerator:
     
     def _build_prompt(
         self,
-        request: GenerationRequest,
+        request: SimpleGenerationRequest,
         template: PromptTemplate
     ) -> str:
         """
@@ -314,7 +308,7 @@ class InterviewQuestionGenerator:
         
         return prompt_content
     
-    def _parse_json_response(self, response: str) -> Dict[str, Any]:
+    def _parse_json_response(self, response: str) -> dict[str, Any]:
         """
         Parse JSON response from API.
         
@@ -349,7 +343,7 @@ class InterviewQuestionGenerator:
             logger.error(f"JSON parsing failed: {str(e)}")
             raise ParsingError(f"Failed to parse JSON response: {str(e)}")
     
-    def _parse_text_response(self, response: str) -> Dict[str, Any]:
+    def _parse_text_response(self, response: str) -> dict[str, Any]:
         """
         Parse text response to extract questions and recommendations.
         
@@ -424,8 +418,8 @@ class InterviewQuestionGenerator:
     )
     async def generate_questions(
         self,
-        request: GenerationRequest,
-        preferred_technique: Optional[PromptTechnique] = None
+        request: SimpleGenerationRequest,
+        preferred_technique: PromptTechnique | None = None
     ) -> GenerationResult:
         """
         Generate interview questions based on request.
@@ -465,7 +459,7 @@ class InterviewQuestionGenerator:
                     questions=[],
                     recommendations=[],
                     metadata={"error": error_msg},
-                    cost_breakdown=CostBreakdown(0, 0, 0, 0, 0),
+                    cost_breakdown=SimpleCostBreakdown(0, 0, 0, 0, 0),
                     raw_response="",
                     technique_used=PromptTechnique.ZERO_SHOT,
                     model_used=self.model,
@@ -478,7 +472,7 @@ class InterviewQuestionGenerator:
                 questions=[],
                 recommendations=["Unable to validate input. Please try again."],
                 metadata={"error": str(e)},
-                cost_breakdown=CostBreakdown(0, 0, 0, 0, 0),
+                cost_breakdown=SimpleCostBreakdown(0, 0, 0, 0, 0),
                 raw_response="",
                 technique_used=PromptTechnique.ZERO_SHOT,
                 model_used=self.model,
@@ -520,7 +514,11 @@ class InterviewQuestionGenerator:
                     temperature=getattr(request, 'temperature', 0.7),
                     max_tokens=2000
                 )
-                
+
+                # Validate API response structure
+                if not isinstance(api_response, dict) or "content" not in api_response:
+                    raise ValueError(f"Invalid API response structure: {type(api_response)}")
+
                 # Use enhanced parser
                 parsed_response = response_parser.parse(
                     api_response["content"],
@@ -541,12 +539,13 @@ class InterviewQuestionGenerator:
                 }
                 
                 # Calculate costs
+                usage = api_response.get("usage", {"prompt_tokens": 0, "completion_tokens": 0})
                 cost_data = cost_calculator.calculate_cost(
                     self.model.value,
-                    api_response["usage"]["prompt_tokens"],
-                    api_response["usage"]["completion_tokens"]
+                    usage.get("prompt_tokens", 0),
+                    usage.get("completion_tokens", 0)
                 )
-                cost_breakdown = CostBreakdown(
+                cost_breakdown = SimpleCostBreakdown(
                     input_cost=cost_data["input_cost"],
                     output_cost=cost_data["output_cost"],
                     total_cost=cost_data["total_cost"],
@@ -568,8 +567,8 @@ class InterviewQuestionGenerator:
                     metadata={
                         "technique": technique.value,
                         "template_name": template.name,
-                        "tokens_used": api_response["usage"]["total_tokens"],
-                        "finish_reason": api_response["finish_reason"],
+                        "tokens_used": usage.get("total_tokens", 0),
+                        "finish_reason": api_response.get("finish_reason", "unknown"),
                         **parsed_data.get("metadata", {})
                     },
                     cost_breakdown=cost_breakdown,
@@ -599,7 +598,7 @@ class InterviewQuestionGenerator:
                 "Please try again later or contact support."
             ],
             metadata={"error": "All techniques failed", "last_error": last_error},
-            cost_breakdown=CostBreakdown(0, 0, 0, 0, 0),
+            cost_breakdown=SimpleCostBreakdown(0, 0, 0, 0, 0),
             raw_response="",
             technique_used=PromptTechnique.ZERO_SHOT,
             model_used=self.model,
@@ -609,8 +608,8 @@ class InterviewQuestionGenerator:
     
     def generate_questions_sync(
         self,
-        request: GenerationRequest,
-        preferred_technique: Optional[PromptTechnique] = None
+        request: SimpleGenerationRequest,
+        preferred_technique: PromptTechnique | None = None
     ) -> GenerationResult:
         """
         Synchronous wrapper for generate_questions.
@@ -648,9 +647,9 @@ class InterviewQuestionGenerator:
     def parse_response(
         self,
         response: str,
-        interview_type: Optional[InterviewType] = None,
-        experience_level: Optional[ExperienceLevel] = None
-    ) -> Dict[str, Any]:
+        interview_type: InterviewType | None = None,
+        experience_level: ExperienceLevel | None = None
+    ) -> dict[str, Any]:
         """
         Parse AI response using enhanced parser.
         
@@ -671,13 +670,23 @@ class InterviewQuestionGenerator:
             "metadata": parsed.metadata
         }
     
-    def get_generation_stats(self) -> Dict[str, Any]:
+    def get_generation_stats(self) -> dict[str, Any]:
         """
         Get generation statistics.
         
         Returns:
             Statistics dictionary
         """
+        cumulative_stats = cost_calculator.get_cumulative_stats()
+        return {
+            "model": self.model.value,
+            "total_cost": cumulative_stats.get("total_cost", 0.0),
+            "session_costs": cumulative_stats.get("session_costs", []),
+            "rate_limit_status": rate_limiter.get_rate_limit_status(),
+            "rate_limit_stats": rate_limiter.get_statistics()
+        }        
+        
+       
         cumulative_stats = cost_calculator.get_cumulative_stats()
         return {
             "model": self.model.value,

@@ -3,10 +3,10 @@ Structured Output prompt implementation for AI interview question generation.
 Provides JSON-formatted response templates with question metadata for consistent parsing.
 """
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from models.enums import (DifficultyLevel, ExperienceLevel, InterviewType,
-                          PromptTechnique, QuestionCategory)
+from ..models.enums import (ExperienceLevel, InterviewType,
+                          PromptTechnique)
 
 from .prompts import PromptTemplate, prompt_library
 
@@ -741,7 +741,7 @@ Respond with valid JSON only:""",
         prompt_library.register_template(reverse_generic)
 
     @staticmethod
-    def validate_json_response(response: str) -> Dict[str, Any]:
+    def validate_json_response(response: str) -> dict[str, Any]:
         """
         Validate and parse JSON response from structured output.
 
@@ -793,7 +793,7 @@ Respond with valid JSON only:""",
         return data
 
     @staticmethod
-    def _validate_question_structure(question: Dict[str, Any], index: int) -> None:
+    def _validate_question_structure(question: dict[str, Any], index: int) -> None:
         """Validate individual question structure"""
         required_fields = ["id", "question", "difficulty",
                            "category", "estimated_time_minutes"]
@@ -826,7 +826,7 @@ Respond with valid JSON only:""",
                 f"Question {index}: Evaluation criteria must be a list")
 
     @staticmethod
-    def _validate_recommendation_structure(recommendation: Dict[str, Any], index: int) -> None:
+    def _validate_recommendation_structure(recommendation: dict[str, Any], index: int) -> None:
         """Validate individual recommendation structure"""
         required_fields = ["category", "recommendation", "priority"]
 
@@ -846,7 +846,7 @@ Respond with valid JSON only:""",
                 f"Recommendation {index}: Resources must be a list")
 
     @staticmethod
-    def _validate_metadata_structure(metadata: Dict[str, Any]) -> None:
+    def _validate_metadata_structure(metadata: dict[str, Any]) -> None:
         """Validate metadata structure"""
         required_fields = ["total_questions", "estimated_total_time"]
 
@@ -871,12 +871,12 @@ Respond with valid JSON only:""",
             raise ValueError("Metadata: Focus areas must be a list")
 
     @staticmethod
-    def get_json_schema() -> Dict[str, Any]:
+    def get_json_schema() -> dict[str, Any]:
         """Get the JSON schema for structured output validation"""
         return StructuredOutputPrompts.JSON_SCHEMA.copy()
 
     @staticmethod
-    def create_sample_response(question_count: int = 3) -> Dict[str, Any]:
+    def create_sample_response(question_count: int = 3) -> dict[str, Any]:
         """
         Create a sample structured response for testing.
 

@@ -18,9 +18,9 @@ try:
     from models.enums import ExperienceLevel, InterviewType, PromptTechnique
     from models.simple_schemas import SimpleCostBreakdown
     from utils.cost import CostCalculator
-    print("✅ All imports successful")
+    print("PASS All imports successful")
 except ImportError as e:
-    print(f"❌ Import failed: {e}")
+    print(f"FAIL Import failed: {e}")
     sys.exit(1)
 
 
@@ -49,7 +49,7 @@ def test_cost_calculator_with_cost_breakdown_model():
     assert cost_breakdown.input_tokens == 1000
     assert cost_breakdown.output_tokens == 500
 
-    print("✅ CostCalculator integrates properly with SimpleCostBreakdown model")
+    print("PASS CostCalculator integrates properly with SimpleCostBreakdown model")
 
 
 def test_cost_breakdown_validation():
@@ -92,7 +92,7 @@ def test_cost_breakdown_validation():
     except ValueError as e:
         assert "Total cost must equal input_cost + output_cost" in str(e)
 
-    print("✅ SimpleCostBreakdown model validation works correctly")
+    print("PASS SimpleCostBreakdown model validation works correctly")
 
 
 def test_multiple_model_calculations():
@@ -126,7 +126,7 @@ def test_multiple_model_calculations():
     assert gpt5_breakdown.input_cost > gpt4o_breakdown.input_cost
     assert gpt5_breakdown.output_cost > gpt4o_breakdown.output_cost
 
-    print("✅ Multiple model calculations work correctly")
+    print("PASS Multiple model calculations work correctly")
 
 
 def test_cumulative_tracking_integration():
@@ -165,12 +165,12 @@ def test_cumulative_tracking_integration():
     assert stats["total_input_tokens"] == 3300
     assert stats["total_output_tokens"] == 1650
 
-    print("✅ Cumulative tracking integration works correctly")
+    print("PASS Cumulative tracking integration works correctly")
 
 
 def run_integration_tests():
     """Run all integration tests"""
-    print("🧪 Running Cost Calculator Integration Tests")
+    print("TEST Running Cost Calculator Integration Tests")
     print("=" * 60)
 
     try:
@@ -180,11 +180,11 @@ def run_integration_tests():
         test_cumulative_tracking_integration()
 
         print("=" * 60)
-        print("🎉 All Cost Calculator integration tests passed!")
+        print("SUCCESS All Cost Calculator integration tests passed!")
         return True
 
     except Exception as e:
-        print(f"❌ Integration test failed: {e}")
+        print(f"FAIL Integration test failed: {e}")
         import traceback
         traceback.print_exc()
         return False
