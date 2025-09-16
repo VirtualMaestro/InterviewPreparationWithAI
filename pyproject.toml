@@ -23,3 +23,7 @@ dev = ["pytest >= 8.4.2", "pytest-asyncio >= 1.1.0"]
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["ai*", "models*", "ui*", "utils*", "exports*", "logs*"]
+
+[tool.basedpyright]
+reportUnusedExpression = false
+reportUnusedCallResult = false

@@ -43,7 +43,7 @@ class Config:
         self.LOGS_DIR.mkdir(exist_ok=True)
         self.EXPORTS_DIR.mkdir(exist_ok=True)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert config to dictionary (excluding sensitive data)"""
         return {
             k: v for k, v in self.__dict__.items()

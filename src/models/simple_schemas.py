@@ -1,9 +1,9 @@
 """
 Simple data schemas without Pydantic for basic functionality
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from .enums import ExperienceLevel, InterviewType, PromptTechnique
 
@@ -56,7 +56,7 @@ class GenerationRequest:
     experience_level: ExperienceLevel
     prompt_technique: PromptTechnique
     question_count: int = 5
-    ai_settings: Optional[AISettings] = None
+    ai_settings: AISettings | None = None
 
     def __post_init__(self):
         """Validate request after initialization"""
@@ -84,14 +84,14 @@ class GenerationRequest:
 @dataclass
 class InterviewResults:
     """Results from interview question generation"""
-    questions: List[str]
-    recommendations: List[str]
+    questions: list[str]
+    recommendations: list[str]
     cost_breakdown: CostBreakdown
     response_time: float
     model_used: str
-    tokens_used: Dict[str, int]
+    tokens_used: dict[str, int]
     technique_used: PromptTechnique
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: dict[str, Any] | None = None
 
     def __post_init__(self):
         """Validate results after initialization"""
@@ -122,7 +122,7 @@ class InterviewSession:
     ai_settings: AISettings
     prompt_technique: PromptTechnique
     question_count: int
-    results: Optional[InterviewResults] = None
+    results: InterviewResults | None = None
 
     def __post_init__(self):
         """Validate session data after initialization"""
@@ -154,16 +154,11 @@ class SessionSummary:
 @dataclass
 class ApplicationState:
     """Application state management"""
-    current_session: Optional[SessionSummary] = None
-    session_history: List[SessionSummary] = None
+    current_session: SessionSummary | None = None
+    session_history: list[SessionSummary] = field(default_factory=list)
     total_api_calls: int = 0
     total_cost: float = 0.0
     error_count: int = 0
-
-    def __post_init__(self):
-        """Initialize default values"""
-        if self.session_history is None:
-            self.session_history = []
 
     def add_session(self, session: SessionSummary) -> None:
         """Add a new session to history"""
@@ -177,6 +172,6 @@ class ApplicationState:
         self.total_api_calls += 1
         self.total_cost += session.total_cost
 
-    def get_recent_sessions(self, count: int = 5) -> List[SessionSummary]:
+    def get_recent_sessions(self, count: int = 5) -> list[SessionSummary]:
         """Get the most recent sessions"""
         return self.session_history[-count:] if self.session_history else []
