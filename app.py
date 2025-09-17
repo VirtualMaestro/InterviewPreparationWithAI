@@ -31,6 +31,7 @@ try:
         InterviewState,
         InterviewType,
         PromptTechnique,
+        SessionMode
     )
     from src.models.simple_schemas import SimpleAISettings, SimpleGenerationRequest
     from src.utils.security import SecurityValidator
@@ -172,14 +173,14 @@ class InterviewPrepGUI:
             # Session Mode
             session_mode = st.radio(
                 "Session Mode",
-                options=["Generate questions", "Mock Interview"],
+                options=[SessionMode.GENERATE_QUESTIONS.value, SessionMode.MOCK_INTERVIEW.value],
                 index=0,
-                key="session_mode"
+                key=SessionMode.KEY.value
             )
             
             # Questions Number (conditional display)
             questions_num = None
-            if session_mode == "Generate questions":
+            if session_mode == SessionMode.GENERATE_QUESTIONS.value:
                 questions_num = st.selectbox(
                     "Number of Questions",
                     options=[5, 10, 15, 20],
@@ -246,7 +247,7 @@ class InterviewPrepGUI:
         with questions_container:
             # Initialize with welcome message if empty
             if not st.session_state.chat_messages:
-                if sidebar_config["session_mode"] == "Mock Interview":
+                if sidebar_config[SessionMode.KEY.value] == SessionMode.MOCK_INTERVIEW.value:
                     st.session_state.chat_messages = [
                         "Welcome! Configure the parameters on the left and click 'Start Mock Interview' to begin."
                     ]
@@ -264,7 +265,7 @@ class InterviewPrepGUI:
         
         # BDD State Management for Button Visibility
         interview_state = st.session_state.get('interview_state', InterviewState.NOT_STARTED)
-        is_mock_mode = sidebar_config["session_mode"] == "Mock Interview"
+        is_mock_mode = sidebar_config[SessionMode.KEY.value] == SessionMode.MOCK_INTERVIEW.value
         
         with col1:
             # Start Mock Interview Button - BDD Logic
@@ -1141,15 +1142,15 @@ class InterviewPrepGUI:
             return
         
         # Render sidebar and get configuration
-        sidebar_config = self.render_sidebar()
+        sidebar_config: dict[str, str | int | float | None] = self.render_sidebar()
         
         # Render main content and get controls
-        controls = self.render_main_content(sidebar_config)
+        controls: dict[str, bool | str | None] = self.render_main_content(sidebar_config)
         
         # Handle mode-specific functionality
-        if sidebar_config["session_mode"] == "Generate questions":
+        if sidebar_config[SessionMode.KEY.value] == SessionMode.GENERATE_QUESTIONS.value:
             self.handle_generate_questions_mode(sidebar_config, controls)
-        elif sidebar_config["session_mode"] == "Mock Interview":
+        elif sidebar_config[SessionMode.KEY.value] == SessionMode.MOCK_INTERVIEW.value:
             self.handle_mock_interview_mode(sidebar_config, controls)
 
 

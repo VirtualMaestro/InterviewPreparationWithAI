@@ -19,22 +19,10 @@ The AI Interview Prep App is an intelligent platform designed to help software e
 
 1. **Install dependencies** using the modern pyproject.toml:
 ```bash
-# Install the package in editable mode with dependencies
-pip install -e src/
-
-# Or if you want development dependencies too:
-pip install -e "src/[dev]"
+# Install the dependencies
+Windows (recommended): py -m pip install 
+Windows (alternative): python -m pip install 
 ```
-
-2. **Set up your API key**:
-
-   ```bash
-   # Copy the example file
-   cp .env.example .env
-   
-   # Edit .env and add your API key:
-   # OPENAI_API_KEY=sk-your-actual-key-here
-   ```
 
 ## Running the Application
 
@@ -42,4 +30,4 @@ pip install -e "src/[dev]"
 streamlit run app.py
 ```
 
-The app will open in your browser at `http://localhost:8501`   
+The app will open in your browser at `http://localhost:8501` (port can change, usually it is 850X)  

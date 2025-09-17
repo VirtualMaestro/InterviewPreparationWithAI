@@ -45,6 +45,10 @@ class QuestionCategory(Enum):
     BEHAVIORAL = "behavioral"
     CASE_STUDY = "case_study"
 
+class SessionMode(Enum):
+    KEY = "session_mode"
+    GENERATE_QUESTIONS = "Generate questions"
+    MOCK_INTERVIEW = "Mock Interview"
 
 class InterviewState(Enum):
     """Mock interview session states for BDD compliance"""

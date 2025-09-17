@@ -9,7 +9,8 @@
             "args": [
                 "run",
                 "app.py",
-                "--debug"
+                "--server.runOnSave",
+                "true"
             ],
             "console": "integratedTerminal",
             "justMyCode": true,

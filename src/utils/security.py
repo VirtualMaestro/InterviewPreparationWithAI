@@ -38,7 +38,7 @@ class SecurityValidator:
     MIN_INPUT_LENGTH = 10
 
     # Prompt injection patterns (case-insensitive)
-    PROMPT_INJECTION_PATTERNS = [
+    PROMPT_INJECTION_PATTERNS: list[str] = [
         # Direct instruction attempts
         r"ignore\s+previous\s+instructions?",
         r"ignore\s+all\s+previous\s+instructions?",
@@ -88,7 +88,7 @@ class SecurityValidator:
     ]
 
     # HTML/Script injection patterns
-    HTML_SCRIPT_PATTERNS = [
+    HTML_SCRIPT_PATTERNS: list[str] = [
         r"<script[^>]*>.*?</script>",
         r"<iframe[^>]*>.*?</iframe>",
         r"javascript\s*:",
@@ -101,7 +101,7 @@ class SecurityValidator:
     ]
 
     # Suspicious content patterns
-    SUSPICIOUS_PATTERNS = [
+    SUSPICIOUS_PATTERNS: list[str] = [
         r"password",
         r"credit\s+card",
         r"social\s+security",
@@ -125,8 +125,8 @@ class SecurityValidator:
         Returns:
             ValidationResult with validation status and cleaned text
         """
-        warnings = []
-        blocked_patterns = []
+        warnings: list[Any] = []
+        blocked_patterns: list[Any] = []
 
         # Basic validation
         if not text or not isinstance(text, str):
