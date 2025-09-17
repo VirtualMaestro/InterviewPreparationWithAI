@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """
-Unit tests for main_gui.py core functionality.
+Unit tests for app.py core functionality.
 
 Tests individual methods and components of the InterviewPrepGUI class.
 """
 
-import pytest
 import sys
 from pathlib import Path
 from unittest.mock import Mock, patch
+
+import pytest
 
 # Add src to path
 src_path = Path(__file__).parent.parent / "src"
@@ -16,8 +17,9 @@ sys.path.insert(0, str(src_path))
 
 # Import GUI class
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from main_gui import InterviewPrepGUI
-from src.models.enums import InterviewType, ExperienceLevel, PromptTechnique
+from app import InterviewPrepGUI
+
+from src.models.enums import ExperienceLevel, InterviewType, PromptTechnique
 
 
 class TestInterviewPrepGUIUnit:
@@ -192,7 +194,7 @@ class TestInterviewPrepGUIUnit:
     @patch('streamlit.session_state', {'api_key': 'sk-test123'})
     def test_ensure_generator_initialized_with_key(self):
         """Test generator initialization with API key."""
-        with patch('main_gui.InterviewQuestionGenerator') as mock_generator_class:
+        with patch('app.InterviewQuestionGenerator') as mock_generator_class:
             mock_generator = Mock()
             mock_generator_class.return_value = mock_generator
 

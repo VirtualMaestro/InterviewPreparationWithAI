@@ -43,10 +43,10 @@ pip install -e "src/[dev]"
 
 ```bash
 # Standard mode
-streamlit run main.py
+streamlit run app.py
 
 # Debug mode (shows more details)
-streamlit run main.py -- --debug
+streamlit run app.py -- --debug
 ```
 
 The app will open in your browser at `http://localhost:8501`

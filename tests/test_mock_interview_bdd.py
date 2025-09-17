@@ -67,17 +67,18 @@ class TestMockInterviewBDD:
         for scenario, expected_state in bdd_scenarios.items():
             assert isinstance(expected_state, InterviewState), f"Scenario '{scenario}' should map to a valid state"
 
-    def test_main_gui_imports_interview_state(self):
-        """Test that main_gui.py correctly imports InterviewState."""
+    def test_app_imports_interview_state(self):
+        """Test that app.py correctly imports InterviewState."""
         # This validates the enum import is working
         sys.path.insert(0, str(Path(__file__).parent.parent))
         
         try:
-            from main_gui import InterviewPrepGUI
-            # If import succeeds, the InterviewState import in main_gui.py is working
-            assert True, "main_gui.py successfully imports InterviewState"
+            from app import InterviewPrepGUI
+
+            # If import succeeds, the InterviewState import in app.py is working
+            assert True, "app.py successfully imports InterviewState"
         except ImportError as e:
-            assert False, f"main_gui.py failed to import InterviewState: {e}"
+            assert False, f"app.py failed to import InterviewState: {e}"
 
     def test_implementation_structure_requirements(self):
         """Test that key implementation requirements are met."""
@@ -164,7 +165,7 @@ if __name__ == "__main__":
     test_bdd.test_interview_state_enum_exists()
     test_bdd.test_state_transition_logic_structure()
     test_bdd.test_bdd_scenario_coverage()
-    test_bdd.test_main_gui_imports_interview_state()
+    test_bdd.test_app_imports_interview_state()
     test_bdd.test_implementation_structure_requirements()
     
     test_compliance = TestBDDCompliance()

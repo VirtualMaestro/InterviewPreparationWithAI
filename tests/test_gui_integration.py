@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Integration tests for the new GUI interface (main_gui.py).
+Integration tests for the new GUI interface (app.py).
 
 Tests complete workflows including recent fixes:
 - Question count bug fix (5, 10, 15, 20)
@@ -11,12 +11,13 @@ Tests complete workflows including recent fixes:
 This validates our GUI consolidation and recent improvements.
 """
 
-import pytest
 import asyncio
 import sys
 from pathlib import Path
-from unittest.mock import Mock, patch, AsyncMock
 from typing import Any, Dict
+from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
 
 # Add src to path
 src_path = Path(__file__).parent.parent / "src"
@@ -24,8 +25,9 @@ sys.path.insert(0, str(src_path))
 
 # Import GUI class
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from main_gui import InterviewPrepGUI
-from src.models.enums import InterviewType, ExperienceLevel, PromptTechnique
+from app import InterviewPrepGUI
+
+from src.models.enums import ExperienceLevel, InterviewType, PromptTechnique
 
 
 class TestGUIIntegration:

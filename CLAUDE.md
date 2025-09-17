@@ -27,7 +27,7 @@ copy .env.example .env
 ### Running the Application
 ```bash
 # Run the GUI specification-compliant interface
-streamlit run main_gui.py
+streamlit run app.py
 ```
 
 ### Testing
@@ -79,7 +79,7 @@ The codebase follows a modular architecture with clear separation of concerns:
 **✅ COMPLETED MODULES:**
 
 - **src/config.py**: Centralized configuration using dataclasses, handles environment variables and directory setup
-- **main_gui.py**: GUI specification-compliant interface with built-in components and session management (single entry point)
+- **app.py**: GUI specification-compliant interface with built-in components and session management (single entry point)
 
 - **src/models/**: Data models with comprehensive validation
   - `enums.py`: All application enums (InterviewType, ExperienceLevel, PromptTechnique, etc.)
@@ -361,7 +361,7 @@ After implementing any feature, run comprehensive tests to ensure reliability an
 - **`RUN_APP.md`** - Application running instructions and setup guidance
 
 ### Key Implementation Files:
-- **`main_gui.py`** - GUI specification-compliant interface (single entry point)
+- **`app.py`** - GUI specification-compliant interface (single entry point)
 - **`src/models/simple_schemas.py`** - Production data models (use these, not schemas.py)
 
 ## Security Considerations

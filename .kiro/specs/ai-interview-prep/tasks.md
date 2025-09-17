@@ -223,21 +223,21 @@
 
 - [x] 16. GUI Interface Consolidation (Legacy Cleanup)
 - [x] 16.1 Analyze current dual interface system
-  - Document differences between main.py (old complex interface) and main_gui.py (new clean interface)
+  - Document differences between main.py (old complex interface) and app.py (new clean interface)
   - Identify dependencies on src/app.py orchestrator (646 lines) and complex UI components
-  - Map functionality overlap between old app.py and new main_gui.py approaches
+  - Map functionality overlap between old app.py and new app.py approaches
   - Assess impact on existing tests and documentation references
   - _Requirements: Code simplification and maintainability_
 
 - [x] 16.2 Create simplified main.py entry point
   - Replace complex main.py with simple redirect to new GUI interface only
   - Remove old orchestrator dependencies and 100+ lines of complex CSS styling
-  - Implement clean page configuration compatible with main_gui.py
+  - Implement clean page configuration compatible with app.py
   - Preserve debug mode and command-line argument handling functionality
   - _Requirements: Single point of entry, backward compatibility_
 
 - [x] 16.3 Deprecate old application orchestrator
-  - Analyze src/app.py (646 lines) for any unique functionality missing in main_gui.py
+  - Analyze src/app.py (646 lines) for any unique functionality missing in app.py
   - Move any critical missing features to the new GUI interface if needed
   - Remove src/app.py and deprecated UI components (src/ui/components.py, src/ui/session.py)
   - Clean up unused old UI components and complex tab-based interface
@@ -275,7 +275,7 @@
    * Answer Field: hidden initially, visible after question ready, hidden during evaluation
    * Submit Answer button: visible only when user has typed something in answer field
  - Add Questions Area with proper content management and evaluation display
- - Enhance existing answer evaluation system (lines 750-872 in main_gui.py) for structured feedback
+ - Enhance existing answer evaluation system (lines 750-872 in app.py) for structured feedback
  - Implement state transition logic matching BDD acceptance criteria exactly
  - Ensure seamless integration with existing question generation mode without regression
  - Add comprehensive testing against all BDD scenarios for UI behavior validation

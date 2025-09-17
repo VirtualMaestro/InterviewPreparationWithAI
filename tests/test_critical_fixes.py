@@ -10,7 +10,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from main_gui import InterviewPrepGUI
+from app import InterviewPrepGUI
+
 
 def test_critical_fixes():
     """Test all critical fixes work correctly."""

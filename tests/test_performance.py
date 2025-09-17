@@ -5,11 +5,11 @@ Performance tests for the Interview Preparation Application.
 Tests response times, memory usage, and concurrent operations.
 """
 
-import time
-import sys
 import asyncio
+import sys
+import time
 from pathlib import Path
-from unittest.mock import Mock, patch, AsyncMock
+from unittest.mock import AsyncMock, Mock, patch
 
 # Add src to path
 src_path = Path(__file__).parent.parent / "src"
@@ -17,7 +17,7 @@ sys.path.insert(0, str(src_path))
 
 # Import GUI class
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from main_gui import InterviewPrepGUI
+from app import InterviewPrepGUI
 
 
 class TestPerformance:
@@ -146,7 +146,7 @@ class TestPerformance:
         """Test generator initialization performance."""
         print("Testing generator initialization performance...")
 
-        with patch('main_gui.InterviewQuestionGenerator') as mock_generator_class:
+        with patch('app.InterviewQuestionGenerator') as mock_generator_class:
             mock_generator = Mock()
             mock_generator_class.return_value = mock_generator
 

@@ -5,7 +5,7 @@ This is the new GUI-compliant interface that matches the specification exactly
 but uses English labels instead of Russian.
 
 Run this file to start the new GUI interface:
-    streamlit run main_gui.py
+    streamlit run app.py
 """
 
 import asyncio
@@ -25,9 +25,14 @@ sys.path.insert(0, str(src_path))
 try:
     from src.ai.generator import InterviewQuestionGenerator
     from src.config import Config
-    from src.models.enums import (AIModel, ExperienceLevel, InterviewType,
-                                  PromptTechnique, InterviewState)
-    from src.models.simple_schemas import SimpleGenerationRequest, SimpleAISettings
+    from src.models.enums import (
+        AIModel,
+        ExperienceLevel,
+        InterviewState,
+        InterviewType,
+        PromptTechnique,
+    )
+    from src.models.simple_schemas import SimpleAISettings, SimpleGenerationRequest
     from src.utils.security import SecurityValidator
 except ImportError as e:
     _ = st.error(f"""
@@ -36,7 +41,7 @@ except ImportError as e:
     Please make sure you're running this from the project root directory and that
     all dependencies are installed. Try:
     
-    1. Run from project root: `streamlit run main_gui.py`
+    1. Run from project root: `streamlit run app.py`
     2. Check that src/ directory contains all required modules
     3. Ensure virtual environment is activated
     """)
@@ -186,7 +191,7 @@ class InterviewPrepGUI:
             with st.expander("Advanced Settings"):
                 prompt_tech = st.selectbox(
                     "Prompting Technique",
-                    options=["Zero Shot", "Few Shot", "Chain of Thought", "Role Based", "Structured Output"],
+                    options=["Zero Shot", "Few Shot", "Role Based", "Chain of Thought", "Structured Output"],
                     index=1,
                     key="prompt_technique"
                 )
@@ -346,8 +351,8 @@ class InterviewPrepGUI:
         technique_mapping = {
             "Zero Shot": PromptTechnique.ZERO_SHOT,
             "Few Shot": PromptTechnique.FEW_SHOT,
-            "Chain of Thought": PromptTechnique.CHAIN_OF_THOUGHT,
             "Role Based": PromptTechnique.ROLE_BASED,
+            "Chain of Thought": PromptTechnique.CHAIN_OF_THOUGHT,
             "Structured Output": PromptTechnique.STRUCTURED_OUTPUT
         }
         

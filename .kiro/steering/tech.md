@@ -56,7 +56,7 @@ copy .env.example .env
 ### Development
 ```bash
 # Run the application
-streamlit run main_gui.py
+streamlit run app.py
 
 # Run tests
 pytest tests/
