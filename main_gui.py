@@ -26,7 +26,7 @@ try:
     from src.ai.generator import InterviewQuestionGenerator
     from src.config import Config
     from src.models.enums import (AIModel, ExperienceLevel, InterviewType,
-                                  PromptTechnique)
+                                  PromptTechnique, InterviewState)
     from src.models.simple_schemas import SimpleGenerationRequest, SimpleAISettings
     from src.utils.security import SecurityValidator
 except ImportError as e:
@@ -74,6 +74,11 @@ class InterviewPrepGUI:
             st.session_state.api_key_validated = False
         if 'generation_in_progress' not in st.session_state:
             st.session_state.generation_in_progress = False
+        # BDD Mock Interview State Management
+        if 'interview_state' not in st.session_state:
+            st.session_state.interview_state = InterviewState.NOT_STARTED
+        if 'user_input_cleared' not in st.session_state:
+            st.session_state.user_input_cleared = False
     
     def validate_api_key(self, api_key: str) -> bool:
         """Validate OpenAI API key."""
@@ -226,59 +231,93 @@ class InterviewPrepGUI:
         }
     
     def render_main_content(self, sidebar_config: dict[str, Any]):
-        """Render main content area as specified."""
+        """Render main content area as specified with BDD compliance."""
         # 1. Header Section
         st.header("Assistant Chat")
         st.caption("Area for generating questions and conducting mock interviews")
         
-        # 2. Chat Area with fixed height container
-        chat_container = st.container(height=400)
-        with chat_container:
+        # 2. Questions Area with fixed height container (BDD requirement)
+        questions_container = st.container(height=400)
+        with questions_container:
             # Initialize with welcome message if empty
             if not st.session_state.chat_messages:
-                st.session_state.chat_messages = [
-                    "Welcome! Configure the parameters on the left and click the button to start."
-                ]
+                if sidebar_config["session_mode"] == "Mock Interview":
+                    st.session_state.chat_messages = [
+                        "Welcome! Configure the parameters on the left and click 'Start Mock Interview' to begin."
+                    ]
+                else:
+                    st.session_state.chat_messages = [
+                        "Welcome! Configure the parameters on the left and click the button to start."
+                    ]
             
-            # Display messages
+            # Display messages in Questions Area
             for message in st.session_state.chat_messages:
                 st.markdown(f"📝 {message}")
         
-        # 3. Control Panel
+        # 3. Control Panel - BDD Button Visibility Logic
         col1, col2, col3 = st.columns([2, 1, 2])
         
+        # BDD State Management for Button Visibility
+        interview_state = st.session_state.get('interview_state', InterviewState.NOT_STARTED)
+        is_mock_mode = sidebar_config["session_mode"] == "Mock Interview"
+        
         with col1:
-            # Dynamic button text based on mode
-            button_text = "Generate Questions" if sidebar_config["session_mode"] == "Generate questions" else "Start Mock Interview"
-            main_button = st.button(button_text, type="primary", key="main_action_button")
+            # Start Mock Interview Button - BDD Logic
+            if is_mock_mode and interview_state == InterviewState.NOT_STARTED:
+                main_button = st.button("Start Mock Interview", type="primary", key="main_action_button")
+            elif not is_mock_mode:
+                # Generate Questions mode
+                main_button = st.button("Generate Questions", type="primary", key="main_action_button")
+            else:
+                # Hidden after clicked in mock mode
+                main_button = False
         
         with col2:
-            # Next question button (only in mock mode)
+            # Next Question Button - BDD Logic
             next_button = False
-            if sidebar_config["session_mode"] == "Mock Interview":
-                next_button = st.button("Next Question", key="next_question_button")
+            if is_mock_mode:
+                if interview_state == InterviewState.GENERATING_QUESTION:
+                    # Visible but disabled during generation
+                    next_button = st.button("Next Question", key="next_question_button", disabled=True)
+                elif interview_state == InterviewState.SHOWING_EVALUATION:
+                    # Visible and enabled after evaluation
+                    next_button = st.button("Next Question", key="next_question_button", disabled=False)
+                # Hidden in other states (NOT_STARTED, QUESTION_READY, EVALUATING_ANSWER)
         
         with col3:
             # Statistics (only in mock mode)
-            if sidebar_config["session_mode"] == "Mock Interview":
+            if is_mock_mode:
                 col3_1, col3_2 = st.columns(2)
                 with col3_1:
                     st.metric("Correct", st.session_state.get('correct', 0))
                 with col3_2:
                     st.metric("Incorrect", st.session_state.get('incorrect', 0))
         
-        # 4. User Input Area (Mock Mode Only)
+        # 4. User Input Area - BDD Logic (Mock Mode Only)
         user_answer = None
         submit_answer = False
-        if sidebar_config["session_mode"] == "Mock Interview" and st.session_state.get('mock_started', False):
-            user_answer = st.text_area(
-                "Enter your answer...",
-                placeholder="Enter your answer...",
-                height=80,
-                key="user_input"
-            )
-            
-            submit_answer = st.button("Submit Answer", key="submit_answer_button")
+        
+        if is_mock_mode:
+            if interview_state == InterviewState.QUESTION_READY:
+                # Answer Field visible after question ready
+                user_input_key = f"user_input_{st.session_state.get('current_question', 0)}"
+                user_answer = st.text_area(
+                    "Enter your answer...",
+                    placeholder="Enter your answer...",
+                    height=80,
+                    key=user_input_key,
+                    value="" if st.session_state.get('user_input_cleared', False) else None
+                )
+                
+                # Submit Answer button visible only if user has typed something
+                if user_answer and user_answer.strip():
+                    submit_answer = st.button("Submit Answer", key="submit_answer_button")
+                
+                # Reset the cleared flag
+                if st.session_state.get('user_input_cleared', False):
+                    st.session_state.user_input_cleared = False
+                    
+            # Hidden during evaluation and other states
         
         return {
             "main_button": main_button,
@@ -872,14 +911,20 @@ class InterviewPrepGUI:
             }
 
     def handle_mock_interview_mode(self, sidebar_config: dict[str, Any], controls: dict[str, Any]):
-        """Handle Mock Interview mode functionality with AI integration."""
-
-        # Start Mock Interview
-        if controls["main_button"] and not st.session_state.get('mock_started', False):
+        """Handle Mock Interview mode functionality with BDD-compliant state transitions."""
+        
+        interview_state = st.session_state.get('interview_state', InterviewState.NOT_STARTED)
+        
+        # BDD Scenario: User clicks "Start Mock Interview"
+        if controls["main_button"] and interview_state == InterviewState.NOT_STARTED:
             if not sidebar_config["job_description"]:
                 st.warning("Please enter a job description to start the mock interview")
                 return
 
+            # Transition to generating_question state
+            st.session_state.interview_state = InterviewState.GENERATING_QUESTION
+            st.session_state.mock_started = True
+            
             with st.spinner("Generating interview questions..."):
                 # Generate questions using AI
                 loop = asyncio.new_event_loop()
@@ -891,7 +936,6 @@ class InterviewPrepGUI:
 
                     if questions:
                         # Initialize mock interview state
-                        st.session_state.mock_started = True
                         st.session_state.mock_questions = questions
                         st.session_state.current_question = 0
                         st.session_state.correct = 0
@@ -899,32 +943,38 @@ class InterviewPrepGUI:
                         st.session_state.total_score = 0
                         st.session_state.answers_given = []
 
-                        # Show first question (clean up formatting)
+                        # Clean up first question formatting
                         first_question = questions[0] if questions else "Tell me about yourself."
-                        # Remove any duplicate "Question X:" prefixes
                         clean_question = first_question
                         if clean_question.lower().startswith('question '):
-                            # Remove the "Question X:" prefix since we add our own
                             parts = clean_question.split(':', 1)
                             if len(parts) > 1:
                                 clean_question = parts[1].strip()
 
+                        # Update Questions Area and transition to question_ready state
                         st.session_state.chat_messages = [
                             f"**🎯 Mock Interview Started!**\n\n**Question 1:**\n{clean_question}"
                         ]
+                        st.session_state.interview_state = InterviewState.QUESTION_READY
                         st.rerun()
                     else:
                         st.error("Failed to generate questions. Please check your API key and try again.")
+                        # Reset state on failure
+                        st.session_state.interview_state = InterviewState.NOT_STARTED
+                        st.session_state.mock_started = False
                 finally:
                     loop.close()
 
-        # Submit Answer
-        if controls["submit_answer"] and controls["user_answer"] and st.session_state.get('mock_started', False):
+        # BDD Scenario: User submits an answer
+        elif controls["submit_answer"] and controls["user_answer"] and interview_state == InterviewState.QUESTION_READY:
             user_answer = controls["user_answer"].strip()
             if not user_answer:
                 st.warning("Please enter an answer before submitting.")
                 return
 
+            # Transition to evaluating_answer state
+            st.session_state.interview_state = InterviewState.EVALUATING_ANSWER
+            
             with st.spinner("Evaluating your answer..."):
                 # Get current question
                 current_q_index = st.session_state.get('current_question', 0)
@@ -961,22 +1011,23 @@ class InterviewPrepGUI:
                         else:
                             st.session_state.incorrect += 1
 
-                        # Add to chat
+                        # Add answer and evaluation to Questions Area
                         st.session_state.chat_messages.append(f"**Your Answer:** {user_answer}")
                         st.session_state.chat_messages.append(
                             f"**AI Feedback (Score: {score}/10):**\n{evaluation.get('feedback', 'Good effort!')}\n\n"
                             f"**💡 Suggestions:** {evaluation.get('suggestions', 'Keep practicing!')}"
                         )
 
-                        # Clear input by using a rerun instead of direct modification
-                        # Note: Cannot modify user_input after widget creation, so we'll use rerun
+                        # Transition to showing_evaluation state
+                        st.session_state.interview_state = InterviewState.SHOWING_EVALUATION
+                        st.session_state.user_input_cleared = True  # Flag to clear input field
                         st.rerun()
 
                     finally:
                         loop.close()
 
-        # Next Question
-        if controls["next_button"] and st.session_state.get('mock_started', False):
+        # BDD Scenario: User clicks "Next Question"
+        elif controls["next_button"] and interview_state == InterviewState.SHOWING_EVALUATION:
             current_q_index = st.session_state.get('current_question', 0)
             questions = st.session_state.get('mock_questions', [])
 
@@ -985,17 +1036,21 @@ class InterviewPrepGUI:
                 st.session_state.current_question = current_q_index + 1
                 next_question = questions[current_q_index + 1]
 
-                # Remove any duplicate "Question X:" prefixes
+                # Clean up question formatting
                 clean_next_question = next_question
                 if clean_next_question.lower().startswith('question '):
-                    # Remove the "Question X:" prefix since we add our own
                     parts = clean_next_question.split(':', 1)
                     if len(parts) > 1:
                         clean_next_question = parts[1].strip()
 
+                # Add next question to Questions Area
                 st.session_state.chat_messages.append(
                     f"**Question {current_q_index + 2}:**\n{clean_next_question}"
                 )
+                
+                # Transition back to question_ready state for the new question
+                st.session_state.interview_state = InterviewState.QUESTION_READY
+                st.session_state.user_input_cleared = True  # Clear input field for new question
                 st.rerun()
             else:
                 # End of interview
@@ -1012,7 +1067,8 @@ class InterviewPrepGUI:
                     f"Great job! Review the feedback above to improve your interview skills."
                 )
 
-                # Reset for next interview
+                # Reset for next interview - transition back to not_started
+                st.session_state.interview_state = InterviewState.NOT_STARTED
                 st.session_state.mock_started = False
                 st.rerun()
     

@@ -46,6 +46,15 @@ class QuestionCategory(Enum):
     CASE_STUDY = "case_study"
 
 
+class InterviewState(Enum):
+    """Mock interview session states for BDD compliance"""
+    NOT_STARTED = "not_started"
+    GENERATING_QUESTION = "generating_question"
+    QUESTION_READY = "question_ready"
+    EVALUATING_ANSWER = "evaluating_answer"
+    SHOWING_EVALUATION = "showing_evaluation"
+
+
 class AIModel(Enum):
     """Available AI models for generation"""
     GPT_5 = "gpt-5"
