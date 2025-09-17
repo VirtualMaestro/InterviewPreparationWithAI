@@ -265,3 +265,18 @@
   - Test error handling and recovery mechanisms with various failure scenarios
   - Verify cost calculation accuracy and session management functionality
   - _Requirements: All requirements validation_
+
+- [ ] 18. Implement Mock Interview UI BDD Feature
+ - Implement BDD-compliant mock interview UI flow based on `docs/mock_interview_ui_bdd.md`
+ - Add precise state management for interview phases (not_started, generating_question, question_ready, evaluating_answer, showing_evaluation)
+ - Implement exact button visibility logic per BDD scenarios:
+   * Start Mock Interview button: visible initially, hidden after clicked
+   * Next Question button: visible but disabled during generation, enabled after evaluation
+   * Answer Field: hidden initially, visible after question ready, hidden during evaluation
+   * Submit Answer button: visible only when user has typed something in answer field
+ - Add Questions Area with proper content management and evaluation display
+ - Enhance existing answer evaluation system (lines 750-872 in main_gui.py) for structured feedback
+ - Implement state transition logic matching BDD acceptance criteria exactly
+ - Ensure seamless integration with existing question generation mode without regression
+ - Add comprehensive testing against all BDD scenarios for UI behavior validation
+ - _Requirements: BDD compliance, UI state management, existing system integration_
