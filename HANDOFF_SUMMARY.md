@@ -388,7 +388,6 @@ template = RoleBasedPrompts.get_persona_template(
 
 # Get Zero-Shot fallback for any combination
 template = ZeroShotPrompts.get_fallback_template(
-    InterviewType.CASE_STUDY, 
     ExperienceLevel.MID
 )
 ```

@@ -20,7 +20,7 @@ if src_path not in sys.path:
     sys.path.insert(0, src_path)
 
 try:
-    from utils.cost import CostCalculator
+    from src.utils.cost import CostCalculator
     print("[SUCCESS] Import successful")
 except ImportError as e:
     print(f"[ERROR] Import failed: {e}")

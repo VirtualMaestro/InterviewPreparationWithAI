@@ -6,30 +6,43 @@ using various prompt engineering techniques with retry mechanisms and fallback s
 """
 
 import asyncio
-import json
 import logging
 from dataclasses import asdict, dataclass
+from typing import Any, final
+
+# from httpx import Response
+from openai import AsyncOpenAI
+from openai.types.chat.chat_completion import ChatCompletion
+from openai.types.responses.response import Response
+from openai.types.responses.response_output_message import ResponseOutputMessage
+from tenacity import (
+    after_log,
+    before_log,
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
+
+from src.ai.parser import ParsedResponse
 from src.utils.error_handler import ErrorContext
 from src.utils.rate_limiter import RateLimitStatus
-from typing import Any
 
-from openai import AsyncOpenAI, OpenAI
-from tenacity import (after_log, before_log, retry, retry_if_exception_type,
-                      stop_after_attempt, wait_exponential)
-
-from .parser import response_parser
-from .prompts import PromptTemplate, prompt_library
-from ..models.enums import (AIModel, ExperienceLevel, InterviewType,
-                          PromptTechnique)
-from ..models.simple_schemas import (SimpleCostBreakdown,
-                                   SimpleGenerationRequest)
+from ..config import Config
+from ..models.enums import AIModel, PromptTechnique
+from ..models.simple_schemas import SimpleCostBreakdown, SimpleGenerationRequest
 from ..utils.cost import cost_calculator
 from ..utils.error_handler import APIError as AppAPIError
 from ..utils.error_handler import RateLimitError as AppRateLimitError
-from ..utils.error_handler import (ValidationError, global_error_handler,
-                                 handle_async_errors)
+from ..utils.error_handler import (
+    ValidationError,
+    global_error_handler,
+    handle_async_errors,
+)
 from ..utils.rate_limiter import rate_limiter
 from ..utils.security import SecurityValidator
+from .parser import response_parser
+from .prompts import PromptTemplate, prompt_library
 
 logger = logging.getLogger(__name__)
 
@@ -63,11 +76,12 @@ class GenerationResult:
     cost_breakdown: SimpleCostBreakdown
     raw_response: str
     technique_used: PromptTechnique
-    model_used: AIModel
+    model_used: str
     success: bool
     error_message: str | None = None
 
 
+@final
 class InterviewQuestionGenerator:
     """
     Main AI question generator with OpenAI API integration.
@@ -80,7 +94,7 @@ class InterviewQuestionGenerator:
     - Structured and text response parsing
     """
     
-    def __init__(self, api_key: str, model: AIModel = AIModel.GPT_4O):
+    def __init__(self, api_key: str, config: Config):
         """
         Initialize the generator with API credentials.
         
@@ -89,9 +103,8 @@ class InterviewQuestionGenerator:
             model: AI model to use (default: GPT-4o)
         """
         self.api_key = api_key
-        self.model = model
+        self.config = config
         self.client = AsyncOpenAI(api_key=api_key)
-        self.sync_client = OpenAI(api_key=api_key)
         self.security = SecurityValidator()
         
         # Configure retry settings
@@ -99,7 +112,81 @@ class InterviewQuestionGenerator:
         self.base_wait = 1  # seconds
         self.max_wait = 10  # seconds
         
-        logger.info(f"Initialized generator with model: {model.value}")
+        logger.info(f"Initialized generator with model: {config.model}")
+
+    #-- Call GPT-5 new API
+    #-- Temperature and top_p are not supported in the GPT-5 new API
+    async def _call_gpt_5(self, prompt: str, max_output_tokens: int) -> dict[str, Any]: #CoroutineType[Any, Any, Response]:
+        response: Response = await self.client.responses.create(
+        model=self.config.model,
+        input=[
+            {"role": "system", "content": "You are an expert interview coach."},
+            {"role": "user", "content": prompt}
+        ],
+        max_output_tokens = max_output_tokens,
+        timeout=30)  # 30 second timeout
+
+        target_output: ResponseOutputMessage | None
+
+        for item in response.output:
+            if  isinstance(item, ResponseOutputMessage):  
+                target_output = item
+                break
+        
+        if target_output is None:
+            raise ValueError("No valid object from the OpenAI API call")
+
+        result = {
+            "content": target_output.content[0].text,
+            "usage": {
+                "prompt_tokens": response.usage.input_tokens if response.usage else 0,
+                "completion_tokens": response.usage.output_tokens if response.usage else 0,
+                "total_tokens": response.usage.total_tokens if response.usage else 0
+            },
+            "model": self.config.model,
+            "finish_reason": target_output.status 
+        }
+
+        return result
+    
+    #--- Call GPT-4 old API
+    async def _call_gpt_4(self, prompt: str, temperature: float, top_p: float, max_tokens: int) -> dict[str, Any]: #CoroutineType[Any, Any, Response]:
+        response: ChatCompletion = await self.client.chat.completions.create(
+        model=self.config.model,
+        messages=[
+            {"role": "system", "content": "You are an expert interview coach."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature = temperature,
+        top_p = top_p,
+        max_tokens = max_tokens,
+        timeout = 30)  # 30 second timeout
+        
+        # Extract response data with proper error checking
+        if not response.choices or len(response.choices) == 0:
+            raise ValueError("API response contains no choices")
+
+        choice = response.choices[0]
+        if not hasattr(choice, 'message') or not hasattr(choice.message, 'content'):
+            raise ValueError("API response choice missing message content")
+
+        content = choice.message.content
+        if content is None:
+            raise ValueError("API response content is None")
+
+        result = {
+            "content": content,
+            "usage": {
+                "prompt_tokens": response.usage.prompt_tokens if response.usage else 0,
+                "completion_tokens": response.usage.completion_tokens if response.usage else 0,
+                "total_tokens": response.usage.total_tokens if response.usage else 0
+            },
+            "model": response.model if hasattr(response, 'model') else self.config.model,
+            "finish_reason": choice.finish_reason if hasattr(choice, 'finish_reason') else "unknown"
+        }
+
+        return result
+    
     
     @handle_async_errors(
         error_handler=global_error_handler,
@@ -116,8 +203,9 @@ class InterviewQuestionGenerator:
     async def _make_api_call(
         self,
         prompt: str,
-        temperature: float = 0.7,
-        max_tokens: int = 2000
+        temperature: float,
+        top_p: float,
+        max_tokens: int
     ) -> dict[str, Any]:
         """
         Make API call with retry logic.
@@ -141,7 +229,7 @@ class InterviewQuestionGenerator:
                 operation="api_call",
                 additional_info={
                     "rate_limit_status" : asdict(status),
-                    "model": self.model.value
+                    "model": self.config.model
                 }
             )
             raise AppRateLimitError(
@@ -153,91 +241,43 @@ class InterviewQuestionGenerator:
         try:
             # Record the API call
             rate_limiter.record_call()
+            result: dict[str, Any]
             
-            # Make the API call
-            response = await self.client.chat.completions.create(
-                model=self.model.value,
-                messages=[
-                    {"role": "system", "content": "You are an expert interview coach."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=temperature,
-                max_tokens=max_tokens,
-                timeout=30  # 30 second timeout
-            )
+            if self.config.model == AIModel.GPT_5.value:
+                result = await self._call_gpt_5(prompt, max_tokens)
+            else:
+                result = await self._call_gpt_4(prompt, temperature, top_p, max_tokens)
             
-            # Extract response data with proper error checking
-            if not response.choices or len(response.choices) == 0:
-                raise ValueError("API response contains no choices")
-
-            choice = response.choices[0]
-            if not hasattr(choice, 'message') or not hasattr(choice.message, 'content'):
-                raise ValueError("API response choice missing message content")
-
-            content = choice.message.content
-            if content is None:
-                raise ValueError("API response content is None")
-
-            result = {
-                "content": content,
-                "usage": {
-                    "prompt_tokens": response.usage.prompt_tokens if response.usage else 0,
-                    "completion_tokens": response.usage.completion_tokens if response.usage else 0,
-                    "total_tokens": response.usage.total_tokens if response.usage else 0
-                },
-                "model": response.model if hasattr(response, 'model') else self.model.value,
-                "finish_reason": choice.finish_reason if hasattr(choice, 'finish_reason') else "unknown"
-            }
-            
-            # logger.debug(f"API call successful: {result['usage']['total_tokens']} tokens")
             return result
             
         except asyncio.TimeoutError:
             context = ErrorContext(
                 operation="api_call",
-                additional_info={"timeout_duration": 30, "model": self.model.value}
+                additional_info={"timeout_duration": 30, "model": self.config.model}
             )
             logger.error("API call timed out")
             raise AppAPIError("API call timed out after 30 seconds", context=context)
         except Exception as e:
             context = ErrorContext(
                 operation="api_call",
-                additional_info={"model": self.model.value, "error_type": type(e).__name__}
+                additional_info={"model": self.config.model, "error_type": type(e).__name__}
             )
             logger.error(f"API call failed: {str(e)}")
             raise AppAPIError(f"API call failed: {str(e)}", context=context, cause=e)
     
+    #****************
     def _select_prompt_template(
         self,
         request: SimpleGenerationRequest,
         technique: PromptTechnique
-    ) -> PromptTemplate | None:
-        """
-        Select appropriate prompt template from the prompt library.
+    ) -> PromptTemplate:
 
-        Args:
-            request: Generation request
-            technique: Prompt technique to use
+        return  prompt_library.get_template(
+            technique,
+            request.interview_type,
+            request.experience_level
+        )
 
-        Returns:
-            Selected template or None
-        """
-        try:
-            # Get template from prompt library
-            template = prompt_library.get_template(
-                technique,
-                request.interview_type,
-                request.experience_level
-            )
-
-            if template:
-                return template
-
-        except Exception as e:
-            logger.error(f"Error selecting template: {str(e)}")
-
-        return None
-    
     def _build_prompt(
         self,
         request: SimpleGenerationRequest,
@@ -274,108 +314,108 @@ class InterviewQuestionGenerator:
         
         return prompt_content
     
-    def _parse_json_response(self, response: str) -> dict[str, Any]:
-        """
-        Parse JSON response from API.
+    # def _parse_json_response(self, response: str) -> dict[str, Any]:
+    #     """
+    #     Parse JSON response from API.
         
-        Args:
-            response: Raw response string
+    #     Args:
+    #         response: Raw response string
             
-        Returns:
-            Parsed JSON dictionary
+    #     Returns:
+    #         Parsed JSON dictionary
             
-        Raises:
-            ParsingError: If parsing fails
-        """
-        try:
-            # Try to extract JSON from response
-            # Handle cases where response has markdown code blocks
-            if "```json" in response:
-                start = response.find("```json") + 7
-                end = response.find("```", start)
-                json_str = response[start:end].strip()
-            elif "```" in response:
-                start = response.find("```") + 3
-                end = response.find("```", start)
-                json_str = response[start:end].strip()
-            else:
-                json_str = response.strip()
+    #     Raises:
+    #         ParsingError: If parsing fails
+    #     """
+    #     try:
+    #         # Try to extract JSON from response
+    #         # Handle cases where response has markdown code blocks
+    #         if "```json" in response:
+    #             start = response.find("```json") + 7
+    #             end = response.find("```", start)
+    #             json_str = response[start:end].strip()
+    #         elif "```" in response:
+    #             start = response.find("```") + 3
+    #             end = response.find("```", start)
+    #             json_str = response[start:end].strip()
+    #         else:
+    #             json_str = response.strip()
             
-            # Parse JSON
-            data = json.loads(json_str)
-            return data
+    #         # Parse JSON
+    #         data = json.loads(json_str)
+    #         return data
             
-        except json.JSONDecodeError as e:
-            logger.error(f"JSON parsing failed: {str(e)}")
-            raise ParsingError(f"Failed to parse JSON response: {str(e)}")
+    #     except json.JSONDecodeError as e:
+    #         logger.error(f"JSON parsing failed: {str(e)}")
+    #         raise ParsingError(f"Failed to parse JSON response: {str(e)}")
     
-    def _parse_text_response(self, response: str) -> dict[str, Any]:
-        """
-        Parse text response to extract questions and recommendations.
+    # def _parse_text_response(self, response: str) -> dict[str, Any]:
+    #     """
+    #     Parse text response to extract questions and recommendations.
         
-        Args:
-            response: Raw response string
+    #     Args:
+    #         response: Raw response string
             
-        Returns:
-            Parsed data dictionary
-        """
-        lines = response.strip().split('\n')
-        questions = []
-        recommendations = []
-        current_section = None
+    #     Returns:
+    #         Parsed data dictionary
+    #     """
+    #     lines = response.strip().split('\n')
+    #     questions = []
+    #     recommendations = []
+    #     current_section = None
         
-        for line in lines:
-            line = line.strip()
-            if not line:
-                continue
+    #     for line in lines:
+    #         line = line.strip()
+    #         if not line:
+    #             continue
                 
-            # Detect sections
-            if any(word in line.lower() for word in ['question', 'interview']):
-                current_section = 'questions'
-                continue
-            elif any(word in line.lower() for word in ['recommendation', 'tip', 'advice']):
-                current_section = 'recommendations'
-                continue
+    #         # Detect sections
+    #         if any(word in line.lower() for word in ['question', 'interview']):
+    #             current_section = 'questions'
+    #             continue
+    #         elif any(word in line.lower() for word in ['recommendation', 'tip', 'advice']):
+    #             current_section = 'recommendations'
+    #             continue
             
-            # Parse numbered items
-            if line[0].isdigit() or line.startswith('-') or line.startswith('•'):
-                # Clean up the line
-                if line[0].isdigit():
-                    # Remove number and punctuation
-                    parts = line.split('.', 1)
-                    if len(parts) > 1:
-                        line = parts[1].strip()
-                    else:
-                        parts = line.split(')', 1)
-                        if len(parts) > 1:
-                            line = parts[1].strip()
-                else:
-                    # Remove bullet point
-                    line = line[1:].strip()
+    #         # Parse numbered items
+    #         if line[0].isdigit() or line.startswith('-') or line.startswith('•'):
+    #             # Clean up the line
+    #             if line[0].isdigit():
+    #                 # Remove number and punctuation
+    #                 parts = line.split('.', 1)
+    #                 if len(parts) > 1:
+    #                     line = parts[1].strip()
+    #                 else:
+    #                     parts = line.split(')', 1)
+    #                     if len(parts) > 1:
+    #                         line = parts[1].strip()
+    #             else:
+    #                 # Remove bullet point
+    #                 line = line[1:].strip()
                 
-                # Add to appropriate section
-                if current_section == 'recommendations' or (
-                    current_section is None and 
-                    any(word in line.lower() for word in ['prepare', 'practice', 'review'])
-                ):
-                    recommendations.append(line)
-                else:
-                    questions.append(line)
+    #             # Add to appropriate section
+    #             if current_section == 'recommendations' or (
+    #                 current_section is None and 
+    #                 any(word in line.lower() for word in ['prepare', 'practice', 'review'])
+    #             ):
+    #                 recommendations.append(line)
+    #             else:
+    #                 questions.append(line)
         
-        # Ensure we have at least some questions
-        if not questions and recommendations:
-            # Some recommendations might actually be questions
-            questions = recommendations[:5]
-            recommendations = recommendations[5:]
+    #     # Ensure we have at least some questions
+    #     if not questions and recommendations:
+    #         # Some recommendations might actually be questions
+    #         questions = recommendations[:5]
+    #         recommendations = recommendations[5:]
         
-        return {
-            "questions": questions,
-            "recommendations": recommendations,
-            "metadata": {
-                "parsed_from": "text",
-                "total_lines": len(lines)
-            }
-        }
+    #     return {
+    #         "questions": questions,
+    #         "recommendations": recommendations,
+    #         "metadata": {
+    #             "parsed_from": "text",
+    #             "total_lines": len(lines)
+    #         }
+    #     }
     
     @handle_async_errors(
         error_handler=global_error_handler,
@@ -385,7 +425,7 @@ class InterviewQuestionGenerator:
     async def generate_questions(
         self,
         request: SimpleGenerationRequest,
-        preferred_technique: PromptTechnique | None = None
+        preferred_technique: PromptTechnique
     ) -> GenerationResult:
         """
         Generate interview questions based on request.
@@ -404,23 +444,22 @@ class InterviewQuestionGenerator:
                 "interview_type": request.interview_type.value,
                 "experience_level": request.experience_level.value,
                 "question_count": request.question_count,
-                "model": self.model.value,
+                "model": self.config.model,
                 "preferred_technique": preferred_technique.value if preferred_technique else None
             }
         )
         
         try:
             # Validate input
-            validation = self.security.validate_input(
-                request.job_description,
-                field_name="job_description"
-            )
+            validation = self.security.validate_input(request.job_description, "job_description")
+
             if not validation.is_valid:
                 error_msg = validation.warnings[0] if validation.warnings else "Validation failed"
+                
                 global_error_handler.handle_error(
                     ValidationError(error_msg, field_name="job_description"),
-                    error_context
-                )
+                    error_context)
+
                 return GenerationResult(
                     questions=[],
                     recommendations=[],
@@ -428,10 +467,10 @@ class InterviewQuestionGenerator:
                     cost_breakdown=SimpleCostBreakdown(0, 0, 0, 0, 0),
                     raw_response="",
                     technique_used=PromptTechnique.ZERO_SHOT,
-                    model_used=self.model,
+                    model_used=self.config.model,
                     success=False,
-                    error_message=error_msg
-                )
+                    error_message=error_msg)
+
         except Exception as e:
             global_error_handler.handle_error(e, error_context)
             return GenerationResult(
@@ -441,138 +480,115 @@ class InterviewQuestionGenerator:
                 cost_breakdown=SimpleCostBreakdown(0, 0, 0, 0, 0),
                 raw_response="",
                 technique_used=PromptTechnique.ZERO_SHOT,
-                model_used=self.model,
+                model_used=self.config.model,
                 success=False,
                 error_message=str(e)
             )
         
-        # Determine techniques to try
-        if preferred_technique:
-            techniques_to_try = [preferred_technique, PromptTechnique.ZERO_SHOT]
-        else:
-            # Try structured output first, then others
-            techniques_to_try = [
-                PromptTechnique.STRUCTURED_OUTPUT,
-                PromptTechnique.FEW_SHOT,
-                PromptTechnique.CHAIN_OF_THOUGHT,
-                PromptTechnique.ZERO_SHOT
-            ]
-        
         last_error = None
         
         # Try each technique
-        for technique in techniques_to_try:
-            try:
-                logger.info(f"Trying technique: {technique.value}")
-                
-                # Select template
-                template = self._select_prompt_template(request, technique)
-                if not template:
-                    logger.warning(f"No template found for {technique.value}")
-                    continue
-                
-                # Build prompt
-                prompt = self._build_prompt(request, template)
-                
-                # Make API call
-                api_response = await self._make_api_call(
-                    prompt,
-                    temperature=getattr(request, 'temperature', 0.7),
-                    max_tokens=2000
-                )
+        # for technique in techniques_to_try:
+        try:
+            logger.info(f"Trying technique: {preferred_technique.value}")
+            
+            # Select template
+            template = self._select_prompt_template(request, preferred_technique)
+            
+            # Build prompt
+            prompt = self._build_prompt(request, template)
+            
+            # Make API call
+            api_response: dict[str, Any] = await self._make_api_call(
+                prompt,
+                temperature = self.config.temperature,
+                top_p = self.config.top_p,
+                max_tokens = self.config.max_tokens
+            )
 
-                # Validate API response structure
-                if not isinstance(api_response, dict) or "content" not in api_response:
-                    raise ValueError(f"Invalid API response structure: {type(api_response)}")
+            # Validate API response structure
+            if not isinstance(api_response, dict) or "content" not in api_response:
+                raise ValueError(f"Invalid API response structure: {type(api_response)}")
 
-                # Use enhanced parser
-                parsed_response = response_parser.parse(
-                    api_response["content"],
-                    request.interview_type,
-                    request.experience_level
-                )
-                
-                # Check if parsing was successful
-                if not parsed_response.success and not parsed_response.questions:
-                    logger.warning(f"Parsing failed for {technique.value}: {parsed_response.error_message}")
-                    continue
-                
-                # Convert to expected format
-                parsed_data = {
-                    "questions": parsed_response.raw_questions,
-                    "recommendations": parsed_response.recommendations,
-                    "metadata": parsed_response.metadata
-                }
-                
-                # Calculate costs
-                usage = api_response.get("usage", {"prompt_tokens": 0, "completion_tokens": 0})
-                cost_data = cost_calculator.calculate_cost(
-                    self.model.value,
-                    usage.get("prompt_tokens", 0),
-                    usage.get("completion_tokens", 0)
-                )
-                cost_breakdown = SimpleCostBreakdown(
-                    input_cost=cost_data["input_cost"],
-                    output_cost=cost_data["output_cost"],
-                    total_cost=cost_data["total_cost"],
-                    input_tokens=api_response["usage"]["prompt_tokens"],
-                    output_tokens=api_response["usage"]["completion_tokens"]
-                )
-                
-                # Track cumulative cost
-                cost_calculator.add_usage(
-                    self.model.value,
-                    api_response["usage"]["prompt_tokens"],
-                    api_response["usage"]["completion_tokens"]
-                )
-                
-                # Build result
-                questions_list = parsed_data.get("questions", [])
-                if isinstance(questions_list, list):
-                    limited_questions = questions_list[:request.question_count]
-                else:
-                    limited_questions = []
+            # Use enhanced parser
+            parsed_response: ParsedResponse = response_parser.parse(api_response["content"], request.interview_type, request.experience_level)
+            
+            # Convert to expected format
+            parsed_data: dict[str, list[str] | dict[str, Any]] = {
+                "questions": parsed_response.raw_questions,
+                "recommendations": parsed_response.recommendations,
+                "metadata": parsed_response.metadata
+            }
+            
+            # Calculate costs
+            usage = api_response.get("usage", {"prompt_tokens": 0, "completion_tokens": 0})
+            cost_data = cost_calculator.calculate_cost(
+                self.config.model,
+                usage.get("prompt_tokens", 0),
+                usage.get("completion_tokens", 0)
+            )
 
-                recommendations_list = parsed_data.get("recommendations", [])
-                if isinstance(recommendations_list, list):
-                    safe_recommendations = recommendations_list
-                else:
-                    safe_recommendations = []
+            cost_breakdown = SimpleCostBreakdown(
+                input_cost = cost_data["input_cost"],
+                output_cost = cost_data["output_cost"],
+                total_cost = cost_data["total_cost"],
+                input_tokens = api_response["usage"]["prompt_tokens"],
+                output_tokens = api_response["usage"]["completion_tokens"]
+            )
+            
+            # Track cumulative cost
+            cost_calculator.add_usage(
+                self.config.model,
+                api_response["usage"]["prompt_tokens"],
+                api_response["usage"]["completion_tokens"]
+            )
+            
+            # Build result
+            questions_list = parsed_data.get("questions", [])
+            if isinstance(questions_list, list):
+                limited_questions = questions_list[:request.question_count]
+            else:
+                limited_questions = []
 
-                # Handle metadata safely
-                parsed_metadata = parsed_data.get("metadata", {})
-                if isinstance(parsed_metadata, dict):
-                    safe_metadata = parsed_metadata
-                else:
-                    safe_metadata = {}
+            recommendations_list = parsed_data.get("recommendations", [])
+            if isinstance(recommendations_list, list):
+                safe_recommendations = recommendations_list
+            else:
+                safe_recommendations = []
 
-                return GenerationResult(
-                    questions=limited_questions,
-                    recommendations=safe_recommendations,
-                    metadata={
-                        "technique": technique.value,
-                        "template_name": template.name,
-                        "tokens_used": usage.get("total_tokens", 0),
-                        "finish_reason": api_response.get("finish_reason", "unknown"),
-                        **safe_metadata
-                    },
-                    cost_breakdown=cost_breakdown,
-                    raw_response=api_response["content"],
-                    technique_used=technique,
-                    model_used=self.model,
-                    success=True
-                )
-                
-            except (APIError, RateLimitError, ParsingError, AppAPIError, AppRateLimitError) as e:
-                logger.error(f"Technique {technique.value} failed: {str(e)}")
-                global_error_handler.handle_error(e, error_context)
-                last_error = str(e)
-                continue
-            except Exception as e:
-                logger.error(f"Unexpected error with {technique.value}: {str(e)}")
-                global_error_handler.handle_error(e, error_context)
-                last_error = str(e)
-                continue
+            # Handle metadata safely
+            parsed_metadata = parsed_data.get("metadata", {})
+            if isinstance(parsed_metadata, dict):
+                safe_metadata = parsed_metadata
+            else:
+                safe_metadata = {}
+
+            return GenerationResult(
+                questions=limited_questions,
+                recommendations=safe_recommendations,
+                metadata={
+                    "technique": preferred_technique.value,
+                    "template_name": template.name,
+                    "tokens_used": usage.get("total_tokens", 0),
+                    "finish_reason": api_response.get("finish_reason", "unknown"),
+                    **safe_metadata
+                },
+
+                cost_breakdown=cost_breakdown,
+                raw_response=api_response["content"],
+                technique_used=preferred_technique,
+                model_used=self.config.model,
+                success=True
+            )
+            
+        except (APIError, RateLimitError, ParsingError, AppAPIError, AppRateLimitError) as e:
+            logger.error(f"Technique {preferred_technique.value} failed: {str(e)}")
+            global_error_handler.handle_error(e, error_context)
+            last_error = str(e)
+        except Exception as e:
+            logger.error(f"Unexpected error with {preferred_technique.value}: {str(e)}")
+            global_error_handler.handle_error(e, error_context)
+            last_error = str(e)
         
         # All techniques failed
         logger.error("All techniques failed")
@@ -586,87 +602,6 @@ class InterviewQuestionGenerator:
             cost_breakdown=SimpleCostBreakdown(0, 0, 0, 0, 0),
             raw_response="",
             technique_used=PromptTechnique.ZERO_SHOT,
-            model_used=self.model,
+            model_used=self.config.model,
             success=False,
-            error_message=last_error or "All prompt techniques failed"
-        )
-    
-    def generate_questions_sync(
-        self,
-        request: SimpleGenerationRequest,
-        preferred_technique: PromptTechnique | None = None
-    ) -> GenerationResult:
-        """
-        Synchronous wrapper for generate_questions.
-        
-        Args:
-            request: Generation request
-            preferred_technique: Preferred prompt technique
-            
-        Returns:
-            Generation result
-        """
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            return loop.run_until_complete(
-                self.generate_questions(request, preferred_technique)
-            )
-        finally:
-            loop.close()
-    
-    async def validate_api_key(self) -> bool:
-        """
-        Validate the API key by making a test call.
-        
-        Returns:
-            True if API key is valid
-        """
-        try:
-            response = await self.client.models.list()
-            return True
-        except Exception as e:
-            logger.error(f"API key validation failed: {str(e)}")
-            return False
-    
-    def parse_response(
-        self,
-        response: str,
-        interview_type: InterviewType | None = None,
-        experience_level: ExperienceLevel | None = None
-    ) -> dict[str, Any]:
-        """
-        Parse AI response using enhanced parser.
-        
-        Args:
-            response: Raw AI response
-            interview_type: Type of interview
-            experience_level: Experience level
-            
-        Returns:
-            Parsed response dictionary
-        """
-        parsed = response_parser.parse(response, interview_type, experience_level)
-        return {
-            "questions": parsed.raw_questions,
-            "recommendations": parsed.recommendations,
-            "strategy_used": parsed.strategy_used.value,
-            "success": parsed.success,
-            "metadata": parsed.metadata
-        }
-    
-    def get_generation_stats(self) -> dict[str, Any]:
-        """
-        Get generation statistics.
-        
-        Returns:
-            Statistics dictionary
-        """
-        cumulative_stats = cost_calculator.get_cumulative_stats()
-        return {
-            "model": self.model.value,
-            "total_cost": cumulative_stats.get("total_cost", 0.0),
-            "session_costs": cumulative_stats.get("session_costs", []),
-            "rate_limit_status": rate_limiter.get_rate_limit_status(),
-            "rate_limit_stats": rate_limiter.get_statistics()
-        }
+            error_message=last_error or "All prompt techniques failed")

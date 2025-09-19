@@ -303,44 +303,6 @@ Generate {question_count} behavioral questions following this framework."""
         
         return PromptLibrary.get_technical_prompt(technique)  # Fallback
     
-    @staticmethod
-    def get_case_study_prompt(technique: PromptTechnique) -> PromptTemplate:
-        """Case study prompts for different techniques"""
-        
-        if technique == PromptTechnique.STRUCTURED_OUTPUT:
-            return PromptTemplate(
-                technique=technique,
-                system_prompt="""You create structured business case studies for interviews.""",
-                user_template="""Generate {question_count} case study questions.
-
-Job Context: {job_description}
-Experience Level: {experience_level}
-
-Return ONLY valid JSON:
-{
-  "case_studies": [
-    {
-      "id": 1,
-      "title": "Case title",
-      "scenario": "Detailed business situation",
-      "primary_question": "Main problem to solve",
-      "data_provided": ["data point 1", "data point 2"],
-      "evaluation_criteria": {
-        "problem_structuring": "How well they break down the problem",
-        "analytical_thinking": "Quality of analysis",
-        "business_acumen": "Understanding of business implications",
-        "communication": "Clarity of recommendations"
-      },
-      "hints": ["Hint 1", "Hint 2"],
-      "expected_approach": "Brief description of good approach",
-      "time_allocation": "minutes"
-    }
-  ]
-}""",
-                output_format="json"
-            )
-        
-        return PromptLibrary.get_technical_prompt(technique)  # Fallback
     
     @staticmethod
     def get_reverse_interview_prompt(technique: PromptTechnique) -> PromptTemplate:
@@ -486,9 +448,7 @@ class InterviewQuestionGenerator:
         """Get appropriate prompt template based on interview type"""
         type_map = {
             "Technical Questions": self.prompt_library.get_technical_prompt,
-            "Behavioral Questions": self.prompt_library.get_behavioral_prompt,
-            "Case Studies": self.prompt_library.get_case_study_prompt,
-            "Questions for Employer": self.prompt_library.get_reverse_interview_prompt
+            "Behavioral Questions": self.prompt_library.get_behavioral_prompt
         }
         
         get_prompt_func = type_map.get(
@@ -518,8 +478,6 @@ class AISettings(BaseModel):
 class InterviewType(Enum):
     TECHNICAL = "technical"
     BEHAVIORAL = "behavioral"
-    CASE_STUDY = "case_study"
-    REVERSE = "reverse"
 
 class ExperienceLevel(Enum):
     JUNIOR = "junior"

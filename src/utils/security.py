@@ -6,7 +6,7 @@ import html
 import logging
 import re
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -16,16 +16,8 @@ class ValidationResult:
     """Result of security validation"""
     is_valid: bool
     cleaned_text: str
-    warnings: List[str]
-    blocked_patterns: List[str]
-
-    def __post_init__(self):
-        """Ensure warnings and blocked_patterns are lists"""
-        if self.warnings is None:
-            self.warnings = []
-        if self.blocked_patterns is None:
-            self.blocked_patterns = []
-
+    warnings: list[str]
+    blocked_patterns: list[str]
 
 class SecurityValidator:
     """
@@ -111,6 +103,16 @@ class SecurityValidator:
         r"private\s+key",
         r"token",
         r"bearer\s+",
+    ]
+
+    # Check for placeholder values
+    PLACEHOLDER_PATTERNS: list[str] = [
+        "your_api_key_here",
+        "your_openai_api_key",
+        "sk-your-actual-api-key",
+        "sk-test",
+        "sk-fake",
+        "sk-placeholder"
     ]
 
     @classmethod
@@ -227,34 +229,6 @@ class SecurityValidator:
         return text.strip()
 
     @classmethod
-    def validate_job_description(cls, job_description: str) -> ValidationResult:
-        """
-        Specialized validation for job descriptions
-
-        Args:
-            job_description: Job description text
-
-        Returns:
-            ValidationResult for job description
-        """
-        result = cls.validate_input(job_description, "Job description")
-
-        if result.is_valid:
-            # Additional job description specific checks
-            if len(result.cleaned_text.split()) < 5:
-                result.warnings.append(
-                    "Job description seems very short. Consider adding more details.")
-
-            # Check for common job description elements
-            job_keywords = ['experience', 'skills',
-                            'requirements', 'responsibilities', 'qualifications']
-            if not any(keyword in result.cleaned_text.lower() for keyword in job_keywords):
-                result.warnings.append(
-                    "Job description might be missing key elements (requirements, skills, etc.)")
-
-        return result
-
-    @classmethod
     def validate_api_key(cls, api_key: str) -> ValidationResult:
         """
         Validate OpenAI API key format
@@ -265,112 +239,34 @@ class SecurityValidator:
         Returns:
             ValidationResult for API key
         """
-        warnings = []
+        result: ValidationResult = ValidationResult(False, "", [], [])
 
         if not api_key:
-            return ValidationResult(
-                is_valid=False,
-                cleaned_text="",
-                warnings=["API key is required"],
-                blocked_patterns=[]
-            )
+            result.warnings.append("API key is required")
+            return result
 
         # Check format
         if not api_key.startswith("sk-"):
-            return ValidationResult(
-                is_valid=False,
-                cleaned_text="",
-                warnings=[
-                    "Invalid API key format. OpenAI keys should start with 'sk-'"],
-                blocked_patterns=[]
-            )
+            result.warnings.append("Invalid API key format. OpenAI keys should start with 'sk-'")
+            return result
 
         # Check length (OpenAI keys are typically 51 characters)
-        if len(api_key) < 40:
-            warnings.append("API key seems unusually short")
-        elif len(api_key) > 60:
-            warnings.append("API key seems unusually long")
+        api_len = len(api_key)
+        too_short: bool = api_len < 48
+        too_long: bool = api_len > 164
 
-        # Check for placeholder values
-        placeholder_patterns = [
-            "your_api_key_here",
-            "your_openai_api_key",
-            "sk-your-actual-api-key",
-            "sk-test",
-            "sk-fake",
-            "sk-placeholder"
-        ]
+        if too_short or too_long:
+            too_much: str = "short" if too_short else "long"
+            result.warnings.append(F"API key seems unusually {too_much}")
+            return result
 
-        for pattern in placeholder_patterns:
+        for pattern in cls.PLACEHOLDER_PATTERNS:
             if pattern in api_key.lower():
-                return ValidationResult(
-                    is_valid=False,
-                    cleaned_text="",
-                    warnings=[
-                        "Please replace placeholder API key with your actual OpenAI API key"],
-                    blocked_patterns=[pattern]
-                )
+                result.warnings.append("Please replace placeholder API key with your actual OpenAI API key")
+                result.blocked_patterns=[pattern]
+                return result
 
-        return ValidationResult(
-            is_valid=True,
-            cleaned_text=api_key.strip(),
-            warnings=warnings,
-            blocked_patterns=[]
-        )
+        result.is_valid = True
+        result.cleaned_text = api_key.strip()
 
-    @classmethod
-    def get_security_report(cls, validation_results: List[ValidationResult]) -> Dict[str, Any]:
-        """
-        Generate a security report from multiple validation results
-
-        Args:
-            validation_results: List of validation results
-
-        Returns:
-            Security report dictionary
-        """
-        total_validations = len(validation_results)
-        valid_inputs = sum(
-            1 for result in validation_results if result.is_valid)
-        total_warnings = sum(len(result.warnings)
-                             for result in validation_results)
-        total_blocks = sum(len(result.blocked_patterns)
-                           for result in validation_results)
-
-        # Collect all blocked patterns
-        all_blocked_patterns = []
-        for result in validation_results:
-            all_blocked_patterns.extend(result.blocked_patterns)
-
-        # Count pattern frequencies
-        pattern_counts = {}
-        for pattern in all_blocked_patterns:
-            pattern_counts[pattern] = pattern_counts.get(pattern, 0) + 1
-
-        return {
-            "total_validations": total_validations,
-            "valid_inputs": valid_inputs,
-            "invalid_inputs": total_validations - valid_inputs,
-            "success_rate": (valid_inputs / total_validations * 100) if total_validations > 0 else 0,
-            "total_warnings": total_warnings,
-            "total_blocks": total_blocks,
-            "blocked_patterns": pattern_counts,
-            "security_level": cls._calculate_security_level(total_blocks, total_warnings, total_validations)
-        }
-
-    @classmethod
-    def _calculate_security_level(cls, blocks: int, warnings: int, total: int) -> str:
-        """Calculate overall security level"""
-        if total == 0:
-            return "unknown"
-
-        threat_ratio = (blocks + warnings * 0.5) / total
-
-        if threat_ratio == 0:
-            return "secure"
-        elif threat_ratio < 0.1:
-            return "low_risk"
-        elif threat_ratio < 0.3:
-            return "medium_risk"
-        else:
-            return "high_risk"
+        return result

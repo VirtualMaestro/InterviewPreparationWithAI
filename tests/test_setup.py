@@ -8,10 +8,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from src.utils.logger import setup_logging
-from src.config import Config
 import sys
 from pathlib import Path
+
+from src.utils.logger import setup_logging
+
+from src.config import Config
 
 # Add src to path BEFORE imports
 
@@ -31,7 +33,7 @@ def test_config():
     # Test validation
     print(f"✓ Validation (should fail): {config.validate()}")
 
-    config.OPENAI_API_KEY = "sk-test-key"
+    config.openai_api_key = "sk-test-key"
     print(f"✓ Validation (should pass): {config.validate()}")
 
     print("Configuration test passed!")

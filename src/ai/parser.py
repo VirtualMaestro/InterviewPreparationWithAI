@@ -9,7 +9,7 @@ import json
 import re
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 from enum import Enum
 
 from src.models.enums import (
@@ -21,6 +21,13 @@ from src.models.enums import (
 
 logger = logging.getLogger(__name__)
 
+# Check for question headers with various patterns
+QUESTION_HEADER_PATTERNS = [
+    r'^\d+\.\s*\*\*Question\s*\d*:?\s*([^*]+)\*\*',  # 1. **Question 1: Title**
+    r'^\*\*Question\s*\d*:?\s*([^*]+)\*\*',         # **Question 1: Title**
+    r'^\*\*Question:\*\*\s*"([^"]+)"',               # **Question:** "Text"
+    r'^\d+\.\s*\*\*([^*]+)\*\*',                     # 1. **Title**
+]
 
 class ParseStrategy(Enum):
     """Parsing strategies for different response formats."""
@@ -37,24 +44,24 @@ class ParseStrategy(Enum):
 class ParsedQuestion:
     """Structured representation of a parsed question."""
     question: str
-    difficulty: Optional[DifficultyLevel] = None
-    category: Optional[QuestionCategory] = None
-    time_estimate: Optional[int] = None
-    hints: List[str] = field(default_factory=list)
-    follow_ups: List[str] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    difficulty: DifficultyLevel | None = None
+    category: QuestionCategory | None = None
+    time_estimate: int | None = None
+    hints: list[str] = field(default_factory=list)
+    follow_ups: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class ParsedResponse:
     """Complete parsed response with questions and recommendations."""
-    questions: List[ParsedQuestion]
-    recommendations: List[str]
-    raw_questions: List[str]  # Simple string list for compatibility
+    questions: list[ParsedQuestion]
+    recommendations: list[str]
+    raw_questions: list[str]  # Simple string list for compatibility
     strategy_used: ParseStrategy
     success: bool
-    error_message: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    error_message: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class ResponseParser:
@@ -98,8 +105,8 @@ class ResponseParser:
     def parse(
         self,
         response: str,
-        interview_type: Optional[InterviewType] = None,
-        experience_level: Optional[ExperienceLevel] = None
+        interview_type: InterviewType,
+        experience_level: ExperienceLevel
     ) -> ParsedResponse:
         """
         Parse AI response with automatic strategy selection and fallback.
@@ -144,6 +151,7 @@ class ResponseParser:
                             result, interview_type, experience_level
                         )
                     
+                    print(f"DEBUG: Successfully parsed with strategy: {strategy.value}")
                     logger.info(f"Successfully parsed with strategy: {strategy.value}")
                     return result
                     
@@ -178,10 +186,10 @@ class ResponseParser:
         }
         """
         json_str = self._extract_json(response)
-        data = json.loads(json_str)
+        data: dict[str, Any] = json.loads(json_str)
         
-        questions = []
-        raw_questions = []
+        questions: list[ParsedQuestion] = []
+        raw_questions: list[str] = []
         
         for q_data in data.get("questions", []):
             if isinstance(q_data, dict):
@@ -207,9 +215,9 @@ class ResponseParser:
                         question=question_text,
                         difficulty=difficulty,
                         category=category,
-                        time_estimate=q_data.get("time_estimate", self.default_time_estimate),
-                        hints=q_data.get("hints", []),
-                        follow_ups=q_data.get("follow_ups", []),
+                        time_estimate=q_data.get('estimated_time_minutes', self.default_time_estimate),
+                        hints=q_data.get('hints', []),
+                        follow_ups=q_data.get("follow_up_questions", []),
                         metadata=q_data.get("metadata", {})
                     )
                     questions.append(parsed_q)
@@ -497,7 +505,7 @@ class ResponseParser:
         ]
         return any(text_lower.startswith(starter) for starter in question_starters)
     
-    def _extract_questions_from_text(self, text: str) -> Tuple[List[ParsedQuestion], List[str]]:
+    def _extract_questions_from_text(self, text: str) -> tuple[list[ParsedQuestion], list[str]]:
         """Extract potential questions from unstructured text."""
         questions = []
         raw_questions = []
@@ -540,10 +548,11 @@ class ResponseParser:
     def _enrich_with_context(
         self,
         result: ParsedResponse,
-        interview_type: Optional[InterviewType],
-        experience_level: Optional[ExperienceLevel]
+        interview_type: InterviewType,
+        experience_level: ExperienceLevel
     ) -> ParsedResponse:
         """Enrich parsed result with contextual information."""
+
         # Add context to metadata
         if interview_type:
             result.metadata["interview_type"] = interview_type.value
@@ -576,17 +585,15 @@ class ResponseParser:
                         question.category = QuestionCategory.CONCEPTUAL
                 elif interview_type == InterviewType.BEHAVIORAL:
                     question.category = QuestionCategory.BEHAVIORAL
-                elif interview_type == InterviewType.CASE_STUDY:
-                    question.category = QuestionCategory.CASE_STUDY
         
         return result
     
     def _generate_default_response(
         self,
-        interview_type: Optional[InterviewType] = None,
-        experience_level: Optional[ExperienceLevel] = None,
-        error: Optional[str] = None
-    ) -> ParsedResponse:
+        interview_type: InterviewType,
+        experience_level: ExperienceLevel,
+        error: str | None = None
+        ) -> ParsedResponse:
         """Generate default response when parsing fails."""
         # Default questions based on interview type
         default_questions = {
@@ -603,20 +610,6 @@ class ResponseParser:
                 "Describe a time when you had to work with a difficult team member",
                 "How do you handle tight deadlines and pressure?",
                 "What are your greatest strengths and areas for improvement?"
-            ],
-            InterviewType.CASE_STUDY: [
-                "How would you approach analyzing this business problem?",
-                "What key metrics would you use to measure success?",
-                "What are the main risks and how would you mitigate them?",
-                "How would you prioritize different solutions?",
-                "What would be your implementation timeline?"
-            ],
-            InterviewType.REVERSE: [
-                "What are the biggest challenges facing the team right now?",
-                "How would you describe the team culture?",
-                "What are the opportunities for growth and learning?",
-                "What does success look like in this role?",
-                "What's the typical career progression for this position?"
             ]
         }
         
@@ -664,22 +657,6 @@ class ResponseParser:
                 "reason": "parsing_failed"
             }
         )
-    
-    def parse_simple(self, response: str) -> Dict[str, List[str]]:
-        """
-        Simple parsing interface for backward compatibility.
-        
-        Args:
-            response: Raw AI response
-            
-        Returns:
-            Dictionary with 'questions' and 'recommendations' lists
-        """
-        parsed = self.parse(response)
-        return {
-            "questions": parsed.raw_questions,
-            "recommendations": parsed.recommendations
-        }
 
     def _parse_markdown_questions(self, response: str) -> ParsedResponse:
         """
@@ -700,16 +677,8 @@ class ResponseParser:
             if not line:
                 continue
 
-            # Check for question headers with various patterns
-            question_header_patterns = [
-                r'^\d+\.\s*\*\*Question\s*\d*:?\s*([^*]+)\*\*',  # 1. **Question 1: Title**
-                r'^\*\*Question\s*\d*:?\s*([^*]+)\*\*',         # **Question 1: Title**
-                r'^\*\*Question:\*\*\s*"([^"]+)"',               # **Question:** "Text"
-                r'^\d+\.\s*\*\*([^*]+)\*\*',                     # 1. **Title**
-            ]
-
             matched = False
-            for pattern in question_header_patterns:
+            for pattern in QUESTION_HEADER_PATTERNS:
                 match = re.search(pattern, line)
                 if match:
                     # If we were building a previous question, save it

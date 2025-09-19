@@ -1,8 +1,8 @@
 """
 Test configuration management
 """
-from pathlib import Path
 import sys
+from pathlib import Path
 
 # Add project root to path for imports
 sys.path.append(str(Path(__file__).parent.parent))
@@ -17,9 +17,9 @@ def test_config_initialization():
 
     assert config.APP_NAME == "AI Interview Prep Assistant"
     assert config.VERSION == "1.0.0"
-    assert config.DEFAULT_MODEL == "gpt-4o"
-    assert config.MAX_TOKENS == 2000
-    assert config.DEFAULT_TEMPERATURE == 0.7
+    assert config.model == "gpt-4o"
+    assert config.max_tokens == 2000
+    assert config.temperature == 0.7
     assert config.MAX_QUESTIONS == 20
     assert config.DEFAULT_QUESTIONS == 5
 
@@ -54,9 +54,9 @@ def test_config_validation():
     assert not config.validate()
 
     # Should fail with invalid format
-    config.OPENAI_API_KEY = "invalid-key"
+    config.openai_api_key = "invalid-key"
     assert not config.validate()
 
     # Should pass with valid format
-    config.OPENAI_API_KEY = "sk-test-key-123"
+    config.openai_api_key = "sk-test-key-123"
     assert config.validate()

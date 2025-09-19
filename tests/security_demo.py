@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 def demo_security_protection():
     """Demonstrate security protection capabilities"""
     # Import after path setup
-    from utils.security import SecurityValidator
+    from src.utils.security import SecurityValidator
 
     print("🛡️ Security Validation System Demo\n")
 

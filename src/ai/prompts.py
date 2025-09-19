@@ -12,13 +12,12 @@ from src.models.enums import ExperienceLevel, InterviewType, PromptTechnique
 class PromptTemplate:
     """
     Template for AI prompts with variable substitution support.
-
     Supports dynamic variable replacement and technique-specific formatting.
     """
     name: str
     technique: PromptTechnique
     interview_type: InterviewType
-    experience_level: ExperienceLevel | None
+    experience_level: ExperienceLevel
     template: str
     variables: list[str] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
@@ -118,7 +117,6 @@ class PromptLibrary:
     def __init__(self):
         """Initialize empty prompt library"""
         self.templates: dict[str, PromptTemplate] = {}
-        self._initialize_default_templates()
 
     def register_template(self, template: PromptTemplate) -> None:
         """
@@ -138,8 +136,8 @@ class PromptLibrary:
         self,
         technique: PromptTechnique,
         interview_type: InterviewType,
-        experience_level: ExperienceLevel | None = None
-    ) -> PromptTemplate | None:
+        experience_level: ExperienceLevel
+    ) -> PromptTemplate:
         """
         Get template by technique, interview type, and experience level.
 
@@ -153,138 +151,17 @@ class PromptLibrary:
         """
         # Try exact match first
         key = self._generate_key(technique, interview_type, experience_level)
-        if key in self.templates:
-            return self.templates[key]
+        return self.templates[key]
 
-        # Try without experience level (generic template)
-        generic_key = self._generate_key(technique, interview_type, None)
-        if generic_key in self.templates:
-            return self.templates[generic_key]
-
-        return None
-
-    def list_templates(
-        self,
-        technique: PromptTechnique | None = None,
-        interview_type: InterviewType | None = None
-    ) -> list[PromptTemplate]:
-        """
-        List templates matching optional filters.
-
-        Args:
-            technique: Filter by technique (optional)
-            interview_type: Filter by interview type (optional)
-
-        Returns:
-            List of matching templates
-        """
-        templates = list(self.templates.values())
-
-        if technique:
-            templates = [t for t in templates if t.technique == technique]
-
-        if interview_type:
-            templates = [
-                t for t in templates if t.interview_type == interview_type]
-
-        return templates
-
-    def get_available_techniques(self, interview_type: InterviewType) -> list[PromptTechnique]:
-        """
-        Get available prompt techniques for an interview type.
-
-        Args:
-            interview_type: Interview type to check
-
-        Returns:
-            List of available techniques
-        """
-        techniques = set()
-        for template in self.templates.values():
-            if template.interview_type == interview_type:
-                techniques.add(template.technique)
-
-        return list(techniques)
-
+    #*********
     def _generate_key(
         self,
         technique: PromptTechnique,
         interview_type: InterviewType,
-        experience_level: ExperienceLevel | None
-    ) -> str:
+        experience_level: ExperienceLevel) -> str:
+    
         """Generate unique key for template storage"""
-        exp_level = experience_level.value if experience_level else "generic"
-        return f"{technique.value}_{interview_type.value}_{exp_level}"
-
-    def _initialize_default_templates(self) -> None:
-        """Initialize library with default prompt templates"""
-        # This will be populated by individual technique implementations
-        # in subsequent tasks (6.2 through 6.6)
-        pass
-
-    def get_template_info(self) -> dict[str, Any]:
-        """
-        Get comprehensive information about all templates.
-
-        Returns:
-            Dictionary with template statistics and information
-        """
-        total_templates = len(self.templates)
-        techniques_count = {}
-        interview_types_count = {}
-
-        for template in self.templates.values():
-            # Count by technique
-            tech = template.technique.value
-            techniques_count[tech] = techniques_count.get(tech, 0) + 1
-
-            # Count by interview type
-            int_type = template.interview_type.value
-            interview_types_count[int_type] = interview_types_count.get(
-                int_type, 0) + 1
-
-        return {
-            "total_templates": total_templates,
-            "techniques": techniques_count,
-            "interview_types": interview_types_count,
-            "template_keys": list(self.templates.keys())
-        }
-
-    def validate_template_coverage(self) -> dict[str, Any]:
-        """
-        Validate that all required combinations have templates.
-
-        Returns:
-            Dictionary with coverage analysis
-        """
-        required_combinations = []
-        missing_combinations = []
-
-        # Generate all required combinations
-        for technique in PromptTechnique:
-            for interview_type in InterviewType:
-                combo = (technique, interview_type)
-                required_combinations.append(combo)
-
-                # Check if template exists
-                template = self.get_template(technique, interview_type)
-                if not template:
-                    missing_combinations.append(combo)
-
-        coverage_percent = (
-            (len(required_combinations) - len(missing_combinations)) /
-            len(required_combinations) * 100
-        )
-
-        return {
-            "total_combinations": len(required_combinations),
-            "covered_combinations": len(required_combinations) - len(missing_combinations),
-            "missing_combinations": [
-                f"{tech.value}_{int_type.value}"
-                for tech, int_type in missing_combinations
-            ],
-            "coverage_percent": round(coverage_percent, 2)
-        }
+        return f"{technique.value}_{interview_type.value}_{experience_level.value}"
 
 
 # Global prompt library instance

@@ -8,9 +8,6 @@ class InterviewType(Enum):
     """Types of interview preparation available"""
     TECHNICAL = "Technical Questions"
     BEHAVIORAL = "Behavioral Questions"
-    CASE_STUDY = "Case Studies"
-    REVERSE = "Questions for Employer"
-
 
 class ExperienceLevel(Enum):
     """Candidate experience levels"""
@@ -43,7 +40,6 @@ class QuestionCategory(Enum):
     CODING = "coding"
     CONCEPTUAL = "conceptual"
     BEHAVIORAL = "behavioral"
-    CASE_STUDY = "case_study"
 
 class SessionMode(Enum):
     KEY = "session_mode"
@@ -63,4 +59,3 @@ class AIModel(Enum):
     """Available AI models for generation"""
     GPT_5 = "gpt-5"
     GPT_4O = "gpt-4o"
-    GPT_4O_MINI = "gpt-4o-mini"

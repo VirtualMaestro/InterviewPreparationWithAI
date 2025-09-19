@@ -86,9 +86,6 @@ async def test_generation():
         print(f"Traceback: {traceback.format_exc()}")
 
 
-if __name__ == "__main__":
-    asyncio.run(test_generation())        print(f"Traceback: {traceback.format_exc()}")
-
 
 if __name__ == "__main__":
     asyncio.run(test_generation())

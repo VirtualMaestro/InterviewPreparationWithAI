@@ -4,7 +4,6 @@ Tests that CostCalculator works properly with SimpleCostBreakdown model.
 """
 import os
 import sys
-from datetime import datetime
 
 # Add src to path for imports
 test_dir = os.path.dirname(os.path.abspath(__file__))
@@ -15,9 +14,8 @@ if src_path not in sys.path:
     sys.path.insert(0, src_path)
 
 try:
-    from models.enums import ExperienceLevel, InterviewType, PromptTechnique
-    from models.simple_schemas import SimpleCostBreakdown
-    from utils.cost import CostCalculator
+    from src.models.simple_schemas import SimpleCostBreakdown
+    from src.utils.cost import CostCalculator
     print("PASS All imports successful")
 except ImportError as e:
     print(f"FAIL Import failed: {e}")

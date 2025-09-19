@@ -6,16 +6,19 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from src.models.enums import AIModel
+
 
 @dataclass
 class Config:
     """Centralized configuration management"""
 
     # API Configuration
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
-    DEFAULT_MODEL: str = "gpt-4o"
-    MAX_TOKENS: int = 2000
-    DEFAULT_TEMPERATURE: float = 0.7
+    openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
+    model: str = AIModel.GPT_5.value
+    max_tokens: int = 2000
+    temperature: float = 0.7
+    top_p: float = 0.9
 
     # Application Settings
     APP_NAME: str = "AI Interview Prep Assistant"
@@ -52,10 +55,10 @@ class Config:
 
     def validate(self) -> bool:
         """Validate configuration settings"""
-        if not self.OPENAI_API_KEY or self.OPENAI_API_KEY == "sk-your-actual-api-key-here":
+        if not self.openai_api_key or self.openai_api_key == "sk-your-actual-api-key-here":
             return False
 
-        if not self.OPENAI_API_KEY.startswith("sk-"):
+        if not self.openai_api_key.startswith("sk-"):
             return False
 
         return True

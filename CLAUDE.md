@@ -267,7 +267,7 @@ from collections.abc import AsyncGenerator, Sequence
 
 # Type aliases
 PromptTemplate: TypeAlias = dict[str, Any]
-InterviewTypeStr: TypeAlias = Literal["technical", "behavioral", "case_study"]
+InterviewTypeStr: TypeAlias = Literal["technical", "behavioral"]
 
 @dataclass(frozen=True, slots=True)  # Modern dataclass features
 class ModernPromptConfig:
