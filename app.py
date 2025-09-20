@@ -198,7 +198,8 @@ class InterviewPrepGUI:
                     persona = st.selectbox("Persona", 
                         [PersonaRole.STRICT.value, PersonaRole.FRIENDLY.value, PersonaRole.NEUTRAL.value], 1, key = "persona")
 
-                model: str = st.selectbox("Model", options=[AIModel.GPT_4O.value, AIModel.GPT_5.value], index = 0, key = "model")
+                # model: str = st.selectbox("Model", options=[AIModel.GPT_4O.value, AIModel.GPT_5.value], index = 0, key = "model")
+                model: str = AIModel.GPT_4O.value
                 
                 temperature = self.config.temperature
                 top_p = self.config.top_p
