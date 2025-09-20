@@ -30,7 +30,7 @@ from src.utils.error_handler import ErrorContext
 from src.utils.rate_limiter import RateLimitStatus
 
 from ..config import Config
-from ..models.enums import AIModel, InterviewType, PromptTechnique
+from ..models.enums import AIModel, PromptTechnique
 from ..models.simple_schemas import SimpleCostBreakdown, SimpleGenerationRequest
 from ..utils.cost import cost_calculator
 from ..utils.error_handler import APIError as AppAPIError

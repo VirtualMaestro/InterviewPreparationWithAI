@@ -16,34 +16,6 @@ class RoleBasedPromptTemplate(PromptTemplate):
         super().__init__(*args, **kwargs)
         self.persona = persona
 
-    # def format(self, **kwargs) -> str:
-    #     """
-    #     Format template with company context integration.
-
-    #     Args:
-    #         **kwargs: Variable values for substitution
-
-    #     Returns:
-    #         Formatted prompt string with company context
-    #     """
-    #     # Add company context if company_type is provided
-    #     if 'company_type' in kwargs:
-    #         company_type = kwargs['company_type']
-    #         if company_type in RoleBasedPrompts.COMPANY_TYPES:
-    #             company_info = RoleBasedPrompts.COMPANY_TYPES[company_type]
-    #             kwargs['company_context'] = f"""
-    #                 Company Type: {company_type}
-    #                 Culture: {company_info['culture']}
-    #                 Values: {company_info['values']}
-    #                 Interview Style: {company_info['interview_style']}"""
-    #         else:
-    #             kwargs['company_context'] = f"Company Type: {company_type}"
-    #     else:
-    #         kwargs['company_context'] = "Company context not specified"
-
-    #     return super().format(**kwargs)
-
-
 class RoleBasedPrompts:
     """
     Role-Based prompt engineering implementation.
@@ -126,65 +98,12 @@ class RoleBasedPrompts:
                 # Also register with prompt library for general access
                 prompt_library.register_template(template)
 
-    # @classmethod
-    # def get_all_role_based_templates(cls) -> list[RoleBasedPromptTemplate]:
-    #     """Get all role-based templates from custom storage"""
-    #     return list(cls._role_templates.values())
-
-    # @classmethod
-    # def get_available_personas(cls) -> list[str]:
-    #     """Get list of available interviewer personas"""
-    #     return list(cls.PERSONAS.keys())
-
-    # @classmethod
-    # def get_persona_info(cls, persona: str) -> dict[str, str]:
-    #     """Get detailed information about a persona"""
-    #     if persona not in cls.PERSONAS:
-    #         raise ValueError(f"Unknown persona: {persona}")
-    #     return cls.PERSONAS[persona].copy()
-
-    # @classmethod
-    # def get_company_types(cls) -> list[str]:
-    #     """Get list of available company types"""
-    #     return list(cls.COMPANY_TYPES.keys())
-
-    # @classmethod
-    # def get_company_info(cls, company_type: str) -> dict[str, str]:
-    #     """Get detailed information about a company type"""
-    #     if company_type not in cls.COMPANY_TYPES:
-    #         raise ValueError(f"Unknown company type: {company_type}")
-    #     return cls.COMPANY_TYPES[company_type].copy()
-
     @classmethod
     def get_persona_template(cls, persona: str, interview_type: InterviewType) -> RoleBasedPromptTemplate:
         """Get template for specific persona and interview type"""
-        # if persona not in cls.PERSONAS:
-            # raise ValueError(f"Unknown persona: {persona}")
 
         key = f"{persona}_{interview_type.value}"
         return cls._role_templates[key]
-
-    # @classmethod
-    # def get_persona_company_compatibility(cls) -> dict[str, list[str]]:
-    #     """Get persona-company compatibility recommendations"""
-    #     return cls.PERSONA_COMPANY_COMPATIBILITY.copy()
-
-    # @classmethod
-    # def recommend_persona_for_company(cls, company_type: str) -> list[str]:
-    #     """Recommend personas suitable for a company type"""
-    #     if company_type not in cls.COMPANY_TYPES:
-    #         raise ValueError(f"Unknown company type: {company_type}")
-
-    #     recommended = []
-    #     for persona, compatible_companies in cls.PERSONA_COMPANY_COMPATIBILITY.items():
-    #         if company_type in compatible_companies:
-    #             recommended.append(persona)
-
-    #     # Always include neutral as a safe option
-    #     if "neutral" not in recommended:
-    #         recommended.append("neutral")
-
-    #     return recommended
 
     @classmethod
     def _create_persona_template(cls, persona: str, interview_type: InterviewType) -> RoleBasedPromptTemplate:
@@ -215,17 +134,6 @@ class RoleBasedPrompts:
             template = template_content,
             metadata = metadata
         )
-
-    # @classmethod
-    # def get_company_context_for_template(cls, company_type: str) -> str:
-    #     """Get company context information for template formatting"""
-    #     if company_type not in cls.COMPANY_TYPES:
-    #         return "Consider the company's unique culture and values in your interview approach."
-
-    #     company_info = cls.COMPANY_TYPES[company_type]
-    #     return f"""Company Culture: {company_info['culture']}
-    #     Company Values: {company_info['values']}
-    #     Interview Style: {company_info['interview_style']}"""
 
     @classmethod
     def _generate_template_content(cls, persona: str, interview_type: InterviewType) -> str:
@@ -321,21 +229,21 @@ class RoleBasedPrompts:
         """Get persona-specific behavioral interview guidance"""
         if persona == "strict":
             return """- Demand specific examples with measurable outcomes
-- Press for details about challenges and how they were overcome
-- Focus on accountability and ownership of results
-- Ask follow-up questions to verify claims and dig deeper"""
+            - Press for details about challenges and how they were overcome
+            - Focus on accountability and ownership of results
+            - Ask follow-up questions to verify claims and dig deeper"""
 
         elif persona == "friendly":
             return """- Create a comfortable environment for sharing experiences
-- Show genuine interest in the candidate's journey and growth
-- Ask about learning experiences and personal development
-- Encourage storytelling and provide positive reinforcement"""
+            - Show genuine interest in the candidate's journey and growth
+            - Ask about learning experiences and personal development
+            - Encourage storytelling and provide positive reinforcement"""
 
         elif persona == "neutral":
             return """- Ask standard behavioral questions using the STAR method
-- Maintain professional objectivity while gathering information
-- Focus on relevant experiences that demonstrate required competencies
-- Evaluate responses fairly without showing bias or preference"""
+            - Maintain professional objectivity while gathering information
+            - Focus on relevant experiences that demonstrate required competencies
+            - Evaluate responses fairly without showing bias or preference"""
 
         return ""
 

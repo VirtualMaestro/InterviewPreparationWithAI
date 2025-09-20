@@ -20,6 +20,7 @@ import streamlit as st
 
 from src.ai.generator import GenerationResult
 from src.models.enums import ExperienceLevel, InterviewType, PersonaRole, PromptTechnique, get_persona_enum
+from src.models.simple_schemas import SimpleCostBreakdown
 from src.utils.security import ValidationResult
 
 # Add src directory to path BEFORE any other imports
@@ -246,9 +247,41 @@ class InterviewPrepGUI:
     
     def render_main_content(self, sidebar_config: dict[str, Any]):
         """Render main content area as specified with BDD compliance."""
-        # 1. Header Section
-        st.header("Assistant Chat")
-        st.caption("Area for generating questions and conducting mock interviews")
+        
+
+        col_header, col_costs = st.columns([1, 1])
+        with col_header:
+            # 1. Header Section
+            st.header("Assistant Chat")
+            st.caption("Area for generating questions and conducting mock interviews")
+
+        costs: SimpleCostBreakdown | None = getattr(st.session_state, "costs", None)
+        if costs is not None: 
+            session_costs = getattr(st.session_state, "session_costs", 0) + costs.total_cost
+
+            with col_costs:
+                st.header("Costs")
+                col_input_cost, col_out_cost, col_total_cost = st.columns([1,1,1])
+                with col_input_cost:
+                    col_input_header, col_input_value = st.columns([1,1])
+                    with col_input_header:
+                        st.caption( "Input: ")
+                    with col_input_value:
+                        st.caption( costs.input_cost )
+                
+                with col_out_cost:
+                    col_output_header, col_output_value = st.columns([1,1])
+                    with col_output_header:
+                        st.caption( "Output: ")
+                    with col_output_value:
+                        st.caption( costs.output_cost )
+        
+                with col_total_cost:
+                    col_total_header, col_total_value = st.columns([1,1])
+                    with col_total_header:
+                        st.caption( "Session: ")
+                    with col_total_value:
+                        st.caption( session_costs )
         
         # 2. Questions Area with fixed height container (BDD requirement)
         questions_container = st.container(height=400)
@@ -266,14 +299,14 @@ class InterviewPrepGUI:
             
             # Display messages in Questions Area
             for message in st.session_state.chat_messages:
-                st.markdown(f"📝 {message}")
+                st.markdown(f"{message}")
         
         # 3. Control Panel - BDD Button Visibility Logic
         col1, col2, col3 = st.columns([2, 1, 2])
         
         # BDD State Management for Button Visibility
-        interview_state = st.session_state.get('interview_state', InterviewState.NOT_STARTED)
-        is_mock_mode = sidebar_config[SessionMode.KEY.value] == SessionMode.MOCK_INTERVIEW.value
+        interview_state: InterviewState = st.session_state.get('interview_state', InterviewState.NOT_STARTED)
+        is_mock_mode: bool = sidebar_config[SessionMode.KEY.value] == SessionMode.MOCK_INTERVIEW.value
         
         with col1:
             # Start Mock Interview Button - BDD Logic
@@ -291,12 +324,9 @@ class InterviewPrepGUI:
             next_button = False
             if is_mock_mode:
                 if interview_state == InterviewState.GENERATING_QUESTION:
-                    # Visible but disabled during generation
                     next_button = st.button("Next Question", key="next_question_button", disabled=True)
                 elif interview_state == InterviewState.SHOWING_EVALUATION:
-                    # Visible and enabled after evaluation
                     next_button = st.button("Next Question", key="next_question_button", disabled=False)
-                # Hidden in other states (NOT_STARTED, QUESTION_READY, EVALUATING_ANSWER)
         
         with col3:
             # Statistics (only in mock mode)
@@ -406,20 +436,6 @@ class InterviewPrepGUI:
                 "Describe a time when you had to learn a new technology quickly.",
                 "How do you prioritize tasks when you have multiple deadlines?",
                 "Give an example of when you went above and beyond in your role."
-            ],
-            "Case Studies": [
-                "How would you design a system to handle 1 million concurrent users?",
-                "Walk me through how you would approach debugging a production issue.",
-                "How would you design a recommendation system for an e-commerce platform?",
-                "Explain how you would migrate a monolith to microservices architecture.",
-                "How would you handle data consistency in a distributed system?"
-            ],
-            "Questions for Employer": [
-                "What does a typical day look like for this role?",
-                "What are the biggest challenges facing the team right now?",
-                "How do you measure success in this position?",
-                "What opportunities are there for professional development?",
-                "Can you tell me about the team culture and working environment?"
             ]
         }
         return fallback_questions.get(question_type, fallback_questions["Technical"])
@@ -565,16 +581,16 @@ class InterviewPrepGUI:
                 'questions': final_questions,
                 'recommendations': result.recommendations,
                 'raw': result.raw_response,
-                'cost_breakdown': {
-                    'input_cost': result.cost_breakdown.input_cost,
-                    'output_cost': result.cost_breakdown.output_cost,
-                    'total_cost': result.cost_breakdown.total_cost
-                },
+                # 'cost_breakdown': {
+                #     'input_cost': result.cost_breakdown.input_cost,
+                #     'output_cost': result.cost_breakdown.output_cost,
+                #     'total_cost': result.cost_breakdown.total_cost
+                # },                
+                'cost_breakdown': result.cost_breakdown,
                 'metadata': {
                     'technique_used': result.technique_used.value,
                     'model_used': result.model_used,
                     'timestamp': datetime.now().isoformat(),
-                    # 'emergency_extraction': len(raw_questions) > len(result.questions),
                     **result.metadata
                 }
             }
@@ -603,44 +619,10 @@ class InterviewPrepGUI:
                 try:
                     results: dict[str, Any] | None = asyncio.run(self.generate_questions_async(mapped_config))
                     
-                    # if results and results.get('questions'):
-                    #     # Debug: Show what we got
-                    #     if self.debug_mode:
-                    #         st.write("Debug - Raw results:", results)
-                    #         st.write("Debug - Questions list:", results['questions'])
-
-                    #     # Format questions for display
-                    #     questions_text = "**Generated Questions:**\n\n"
-                    #     # Fix: Use the correct key and handle None values properly
-                    #     requested_count = sidebar_config.get("questions_num") or 5
-
-                    #     # Debug information
-                    #     if self.debug_mode:
-                    #         st.write(f"🐛 Debug - Requested count: {requested_count}")
-                    #         st.write(f"🐛 Debug - Total questions generated: {len(results['questions'])}")
-                    #         st.write(f"🐛 Debug - Sidebar config: {sidebar_config}")
-
-                    #     questions_list = results['questions'][:requested_count]
-
-                    #     # Check if questions are empty
-                    #     if not any(q.strip() for q in questions_list):
-                    #         st.error("Generated questions are empty. This might be an API response parsing issue.")
-                    #         if self.debug_mode:
-                    #             st.write("Empty questions detected:", questions_list)
-                    #         return
-
-                    #     for i, question in enumerate(questions_list, 1):
-                    #         if question.strip():  # Only show non-empty questions
-                    #             questions_text += f"{i}. {question.strip()}\n\n"
-
-                        # Update chat messages
-                        # st.session_state.chat_messages = [questions_text]
                     st.session_state.chat_messages = [results['raw']]
+                    st.session_state.costs = results['cost_breakdown']
                     st.rerun()
-                    # else:
-                    #     st.error("Failed to generate questions. Please try again.")
-                    #     if self.debug_mode and results:
-                    #         st.write("Debug - Full results:", results)
+                   
                 except Exception as e:
                     st.error(f"Error generating questions: {str(e)}")
     
@@ -669,13 +651,14 @@ class InterviewPrepGUI:
             # generation_request.ai_settings.temperature = mapped_config["temperature"]
 
             # Generate questions
-            result = await self.generator.generate_mock_questions(
+            result: GenerationResult = await self.generator.generate_mock_questions(
                 generation_request,
                 preferred_technique = mapped_config["prompt_technique"]
             )
 
             if result.success and result.questions:
                 # Use the properly parsed questions from the AI system
+                st.session_state.costs = result.cost_breakdown
                 return result.questions
             else:
                 return []

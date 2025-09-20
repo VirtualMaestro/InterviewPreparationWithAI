@@ -78,11 +78,11 @@ class ZeroShotPrompts:
             experience_level=ExperienceLevel.SENIOR,
             template="""Generate {question_count} technical interview questions for a {experience_level} developer position.
 
-Job Description: {job_description}
+                Job Description: {job_description}
 
-Create questions that test advanced system architecture, scalability, technical leadership, and strategic decision-making. Questions should be appropriate for someone with 5+ years of experience and include complex problem-solving scenarios that demonstrate senior-level expertise.
+                Create questions that test advanced system architecture, scalability, technical leadership, and strategic decision-making. Questions should be appropriate for someone with 5+ years of experience and include complex problem-solving scenarios that demonstrate senior-level expertise.
 
-Important: Do not include in your response your greetings or other uneeded sentences. Only questions""",
+                Important: Do not include in your response your greetings or other uneeded sentences. Only questions""",
             metadata={
                 "difficulty": "advanced",
                 "approach": "direct_generation",
@@ -99,11 +99,11 @@ Important: Do not include in your response your greetings or other uneeded sente
             experience_level=ExperienceLevel.LEAD,
             template="""Generate {question_count} technical interview questions for a {experience_level} engineer position.
 
-Job Description: {job_description}
+                Job Description: {job_description}
 
-Create questions that test technical vision, organizational impact, strategic planning, and executive-level technical leadership. Questions should be appropriate for principal/staff level positions and focus on transformation, culture building, and industry influence.
+                Create questions that test technical vision, organizational impact, strategic planning, and executive-level technical leadership. Questions should be appropriate for principal/staff level positions and focus on transformation, culture building, and industry influence.
 
-Important: Do not include in your response your greetings or other uneeded sentences. Only questions""",
+                Important: Do not include in your response your greetings or other uneeded sentences. Only questions""",
             metadata={
                 "difficulty": "expert",
                 "approach": "direct_generation",
@@ -128,11 +128,11 @@ Important: Do not include in your response your greetings or other uneeded sente
             experience_level=ExperienceLevel.JUNIOR,
             template="""Generate {question_count} behavioral interview questions for a {experience_level} position.
 
-            Job Description: {job_description}
+                Job Description: {job_description}
 
-            Create behavioral questions that assess learning ability, collaboration skills, communication, and professional growth. Questions should be appropriate for someone with 1-2 years of experience and focus on individual contributor scenarios.
+                Create behavioral questions that assess learning ability, collaboration skills, communication, and professional growth. Questions should be appropriate for someone with 1-2 years of experience and focus on individual contributor scenarios.
 
-            Important: Do not include in your response your greetings or other uneeded sentences. Only questions""",
+                Important: Do not include in your response your greetings or other uneeded sentences. Only questions""",
             metadata={
                 "difficulty": "entry_level",
                 "approach": "direct_generation",

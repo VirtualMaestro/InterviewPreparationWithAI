@@ -49,63 +49,6 @@ class PromptTemplate:
 
         return list(set(variables))  # Remove duplicates
 
-    # def format(self, **kwargs) -> str:
-        # """
-        # Format template with provided variables.
-
-        # Args:
-        #     **kwargs: Variable values for substitution
-
-        # Returns:
-        #     Formatted prompt string
-
-        # Raises:
-        #     ValueError: If required variables are missing
-        # """
-        # missing_vars = [var for var in self.variables if var not in kwargs]
-        # if missing_vars:
-        #     raise ValueError(f"Missing required variables: {missing_vars}")
-
-        # try:
-        #     return self.template.format(**kwargs)
-        # except KeyError as e:
-        #     raise ValueError(f"Template formatting error: {e}")
-
-    # def validate_variables(self, variables: dict[str, Any]) -> bool:
-        # """
-        # Validate that all required variables are provided.
-
-        # Args:
-        #     variables: Dictionary of variable values
-
-        # Returns:
-        #     True if all variables are present, False otherwise
-        # """
-        # return all(var in variables for var in self.variables)
-
-    # def get_sample_variables(self) -> dict[str, str]:
-    #     """
-    #     Get sample variable values for testing.
-
-    #     Returns:
-    #         Dictionary with sample values for all variables
-    #     """
-    #     samples = {
-    #         'job_description': 'Senior Python Developer with Django and REST API experience',
-    #         'interview_type': 'Technical',
-    #         'experience_level': 'Senior',
-    #         'question_count': '5',
-    #         'company_name': 'TechCorp',
-    #         'role_title': 'Senior Software Engineer',
-    #         'specific_skills': 'Python, Django, PostgreSQL, REST APIs',
-    #         'years_experience': '5-7',
-    #         'interviewer_persona': 'friendly',
-    #         'difficulty_level': 'advanced'
-    #     }
-
-    #     return {var: samples.get(var, f'sample_{var}') for var in self.variables}
-
-
 class PromptLibrary:
     """
     Central library for managing prompt templates.
