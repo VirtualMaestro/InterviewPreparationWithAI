@@ -59,3 +59,16 @@ class AIModel(Enum):
     """Available AI models for generation"""
     GPT_5 = "gpt-5"
     GPT_4O = "gpt-4o"
+
+class PersonaRole(Enum):
+    STRICT = "strict"
+    FRIENDLY = "friendly"
+    NEUTRAL = "neutral"
+
+
+def get_persona_enum(persona: str) -> PersonaRole:
+    match persona.lower():
+        case "strict": return PersonaRole.STRICT
+        case "friendly": return PersonaRole.FRIENDLY
+        case "neutral": return PersonaRole.NEUTRAL
+        case _: return PersonaRole.NEUTRAL

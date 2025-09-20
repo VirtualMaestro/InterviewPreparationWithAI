@@ -61,7 +61,8 @@ class FewShotPrompts:
                 - Avoid complex system design or advanced algorithms
                 - Include practical, hands-on scenarios
 
-                Questions should cover areas mentioned in the job description: {job_description}""",
+                Questions should cover areas mentioned in the job description: {job_description}
+                Important: Do not include in your response your greetings or other uneeded sentences. Only questions""",
 
             metadata={
                 "difficulty": "beginner",
@@ -103,7 +104,8 @@ class FewShotPrompts:
                 - Cover optimization and best practices
                 - Balance theory with practical implementation
 
-                Questions should cover areas mentioned in the job description: {job_description}""",
+                Questions should cover areas mentioned in the job description: {job_description}
+                Important: Do not include in your response your greetings or other uneeded sentences. Only questions""",
 
             metadata={
                 "difficulty": "intermediate",
@@ -145,7 +147,8 @@ class FewShotPrompts:
                 - Cover scalability, reliability, and performance
                 - Demonstrate leadership and mentoring capabilities
 
-                Questions should cover areas mentioned in the job description: {job_description}""",
+                Questions should cover areas mentioned in the job description: {job_description}
+                Important: Do not include in your response your greetings or other uneeded sentences. Only questions""",
             metadata={
                 "difficulty": "advanced",
                 "focus_areas": ["system_architecture", "scalability", "leadership", "strategic_thinking"],
@@ -186,7 +189,8 @@ class FewShotPrompts:
                 - Cover mentoring, architecture decisions, and process improvement
                 - Demonstrate ability to influence and guide technical direction
 
-                Questions should cover areas mentioned in the job description: {job_description}""",
+                Questions should cover areas mentioned in the job description: {job_description}
+                Important: Do not include in your response your greetings or other uneeded sentences. Only questions""",
             metadata={
                 "difficulty": "expert",
                 "focus_areas": ["technical_leadership", "strategy", "team_management", "organizational_scaling"],
@@ -233,7 +237,8 @@ class FewShotPrompts:
                 - Emphasize collaboration and communication
                 - Test adaptability and problem-solving approach
                 - Avoid complex leadership or management scenarios
-                - Relate to the role described in: {job_description}""",
+                - Relate to the role described in: {job_description}
+                Important: Do not include in your response your greetings or other uneeded sentences. Only questions""",
             metadata={
                 "difficulty": "entry_level",
                 "focus_areas": ["learning", "collaboration", "communication", "growth_mindset"],
@@ -272,7 +277,8 @@ class FewShotPrompts:
                 - Test project management and prioritization skills
                 - Emphasize proactive problem-solving
                 - Cover cross-team collaboration and communication
-                - Relate to the role described in: {job_description}""",
+                - Relate to the role described in: {job_description}
+                Important: Do not include in your response your greetings or other uneeded sentences. Only questions""",
             metadata={
                 "difficulty": "intermediate",
                 "focus_areas": ["influence", "project_management", "proactive_thinking", "cross_team_collaboration"],
@@ -311,7 +317,8 @@ class FewShotPrompts:
                 - Test strategic thinking and organizational impact
                 - Emphasize stakeholder management and communication
                 - Cover conflict resolution and difficult decisions
-                - Relate to the role described in: {job_description}""",
+                - Relate to the role described in: {job_description}
+                Important: Do not include in your response your greetings or other uneeded sentences. Only questions""",
             metadata={
                 "difficulty": "advanced",
                 "focus_areas": ["leadership", "mentoring", "strategic_thinking", "stakeholder_management"],
@@ -350,7 +357,8 @@ class FewShotPrompts:
                 - Test executive communication and influence
                 - Emphasize strategic business thinking
                 - Cover culture change and team building at scale
-                - Relate to the role described in: {job_description}""",
+                - Relate to the role described in: {job_description}
+                Important: Do not include in your response your greetings or other uneeded sentences. Only questions""",
             metadata={
                 "difficulty": "expert",
                 "focus_areas": ["organizational_transformation", "executive_communication", "strategic_business_thinking", "culture_change"],

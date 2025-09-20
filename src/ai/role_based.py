@@ -2,7 +2,7 @@
 Role-Based prompt implementation for AI interview question generation.
 Implements interviewer persona templates with company type integration.
 """
-from ..models.enums import ExperienceLevel, InterviewType, PromptTechnique
+from ..models.enums import ExperienceLevel, InterviewType, PersonaRole, PromptTechnique
 from .prompts import PromptTemplate, prompt_library
 
 
@@ -58,19 +58,19 @@ class RoleBasedPrompts:
 
     # Persona definitions with characteristics
     PERSONAS = {
-        "strict": {
+        PersonaRole.STRICT.value: {
             "name": "Strict Interviewer",
             "description": "Detail-oriented, precise, and thorough interviewer who expects comprehensive answers",
             "tone": "formal and demanding",
             "focus": "technical accuracy and depth of knowledge"
         },
-        "friendly": {
+        PersonaRole.FRIENDLY.value: {
             "name": "Friendly Interviewer",
             "description": "Supportive, encouraging interviewer who creates a comfortable environment",
             "tone": "warm and encouraging",
             "focus": "candidate potential and collaborative skills"
         },
-        "neutral": {
+        PersonaRole.NEUTRAL.value: {
             "name": "Neutral Interviewer",
             "description": "Balanced, objective interviewer who maintains professional distance",
             "tone": "professional and balanced",
@@ -126,65 +126,65 @@ class RoleBasedPrompts:
                 # Also register with prompt library for general access
                 prompt_library.register_template(template)
 
-    @classmethod
-    def get_all_role_based_templates(cls) -> list[RoleBasedPromptTemplate]:
-        """Get all role-based templates from custom storage"""
-        return list(cls._role_templates.values())
+    # @classmethod
+    # def get_all_role_based_templates(cls) -> list[RoleBasedPromptTemplate]:
+    #     """Get all role-based templates from custom storage"""
+    #     return list(cls._role_templates.values())
+
+    # @classmethod
+    # def get_available_personas(cls) -> list[str]:
+    #     """Get list of available interviewer personas"""
+    #     return list(cls.PERSONAS.keys())
+
+    # @classmethod
+    # def get_persona_info(cls, persona: str) -> dict[str, str]:
+    #     """Get detailed information about a persona"""
+    #     if persona not in cls.PERSONAS:
+    #         raise ValueError(f"Unknown persona: {persona}")
+    #     return cls.PERSONAS[persona].copy()
+
+    # @classmethod
+    # def get_company_types(cls) -> list[str]:
+    #     """Get list of available company types"""
+    #     return list(cls.COMPANY_TYPES.keys())
+
+    # @classmethod
+    # def get_company_info(cls, company_type: str) -> dict[str, str]:
+    #     """Get detailed information about a company type"""
+    #     if company_type not in cls.COMPANY_TYPES:
+    #         raise ValueError(f"Unknown company type: {company_type}")
+    #     return cls.COMPANY_TYPES[company_type].copy()
 
     @classmethod
-    def get_available_personas(cls) -> list[str]:
-        """Get list of available interviewer personas"""
-        return list(cls.PERSONAS.keys())
-
-    @classmethod
-    def get_persona_info(cls, persona: str) -> dict[str, str]:
-        """Get detailed information about a persona"""
-        if persona not in cls.PERSONAS:
-            raise ValueError(f"Unknown persona: {persona}")
-        return cls.PERSONAS[persona].copy()
-
-    @classmethod
-    def get_company_types(cls) -> list[str]:
-        """Get list of available company types"""
-        return list(cls.COMPANY_TYPES.keys())
-
-    @classmethod
-    def get_company_info(cls, company_type: str) -> dict[str, str]:
-        """Get detailed information about a company type"""
-        if company_type not in cls.COMPANY_TYPES:
-            raise ValueError(f"Unknown company type: {company_type}")
-        return cls.COMPANY_TYPES[company_type].copy()
-
-    @classmethod
-    def get_persona_template(cls, persona: str, interview_type: InterviewType) -> RoleBasedPromptTemplate | None:
+    def get_persona_template(cls, persona: str, interview_type: InterviewType) -> RoleBasedPromptTemplate:
         """Get template for specific persona and interview type"""
-        if persona not in cls.PERSONAS:
-            raise ValueError(f"Unknown persona: {persona}")
+        # if persona not in cls.PERSONAS:
+            # raise ValueError(f"Unknown persona: {persona}")
 
         key = f"{persona}_{interview_type.value}"
-        return cls._role_templates.get(key)
+        return cls._role_templates[key]
 
-    @classmethod
-    def get_persona_company_compatibility(cls) -> dict[str, list[str]]:
-        """Get persona-company compatibility recommendations"""
-        return cls.PERSONA_COMPANY_COMPATIBILITY.copy()
+    # @classmethod
+    # def get_persona_company_compatibility(cls) -> dict[str, list[str]]:
+    #     """Get persona-company compatibility recommendations"""
+    #     return cls.PERSONA_COMPANY_COMPATIBILITY.copy()
 
-    @classmethod
-    def recommend_persona_for_company(cls, company_type: str) -> list[str]:
-        """Recommend personas suitable for a company type"""
-        if company_type not in cls.COMPANY_TYPES:
-            raise ValueError(f"Unknown company type: {company_type}")
+    # @classmethod
+    # def recommend_persona_for_company(cls, company_type: str) -> list[str]:
+    #     """Recommend personas suitable for a company type"""
+    #     if company_type not in cls.COMPANY_TYPES:
+    #         raise ValueError(f"Unknown company type: {company_type}")
 
-        recommended = []
-        for persona, compatible_companies in cls.PERSONA_COMPANY_COMPATIBILITY.items():
-            if company_type in compatible_companies:
-                recommended.append(persona)
+    #     recommended = []
+    #     for persona, compatible_companies in cls.PERSONA_COMPANY_COMPATIBILITY.items():
+    #         if company_type in compatible_companies:
+    #             recommended.append(persona)
 
-        # Always include neutral as a safe option
-        if "neutral" not in recommended:
-            recommended.append("neutral")
+    #     # Always include neutral as a safe option
+    #     if "neutral" not in recommended:
+    #         recommended.append("neutral")
 
-        return recommended
+    #     return recommended
 
     @classmethod
     def _create_persona_template(cls, persona: str, interview_type: InterviewType) -> RoleBasedPromptTemplate:
@@ -207,25 +207,25 @@ class RoleBasedPrompts:
         }
 
         return RoleBasedPromptTemplate(
-            persona=persona,
-            name=template_name,
-            technique=PromptTechnique.ROLE_BASED,
-            interview_type=interview_type,
-            experience_level=ExperienceLevel.JUNIOR,  # Generic template
-            template=template_content,
-            metadata=metadata
+            persona = persona,
+            name = template_name,
+            technique = PromptTechnique.ROLE_BASED,
+            interview_type = interview_type,
+            experience_level = ExperienceLevel.JUNIOR,  # Generic template
+            template = template_content,
+            metadata = metadata
         )
 
-    @classmethod
-    def get_company_context_for_template(cls, company_type: str) -> str:
-        """Get company context information for template formatting"""
-        if company_type not in cls.COMPANY_TYPES:
-            return "Consider the company's unique culture and values in your interview approach."
+    # @classmethod
+    # def get_company_context_for_template(cls, company_type: str) -> str:
+    #     """Get company context information for template formatting"""
+    #     if company_type not in cls.COMPANY_TYPES:
+    #         return "Consider the company's unique culture and values in your interview approach."
 
-        company_info = cls.COMPANY_TYPES[company_type]
-        return f"""Company Culture: {company_info['culture']}
-Company Values: {company_info['values']}
-Interview Style: {company_info['interview_style']}"""
+    #     company_info = cls.COMPANY_TYPES[company_type]
+    #     return f"""Company Culture: {company_info['culture']}
+    #     Company Values: {company_info['values']}
+    #     Interview Style: {company_info['interview_style']}"""
 
     @classmethod
     def _generate_template_content(cls, persona: str, interview_type: InterviewType) -> str:
@@ -240,9 +240,6 @@ Interview Style: {company_info['interview_style']}"""
             - Style: {}
             - Focus: {}
             - Description: {}
-
-            COMPANY CONTEXT:
-            {{company_context}}
 
             Adapt your interviewing style to match the company culture and values. Consider how this company type typically conducts interviews and tailor questions to reflect what this type of organization values most.
 
@@ -261,7 +258,8 @@ Interview Style: {company_info['interview_style']}"""
             Remember to maintain your {} interviewer persona throughout:
             {}
 
-            Format your response as a numbered list of questions, followed by preparation recommendations that account for your interviewer style and the company culture."""
+            Format your response as a numbered list of questions, followed by preparation recommendations that account for your interviewer style and the company culture.
+            Important: Do not include in your response your greetings or other uneeded sentences. Only questions"""
 
         base_template = template_text.format(
             persona_info['name'],
@@ -285,10 +283,9 @@ Interview Style: {company_info['interview_style']}"""
         """Get persona-specific guidance for question generation"""
         if interview_type == InterviewType.TECHNICAL:
             return cls._get_persona_technical_guidance(persona)
-        elif interview_type == InterviewType.BEHAVIORAL:
-            return cls._get_persona_behavioral_guidance(persona)
-        else:
-            return ""
+        
+        return cls._get_persona_behavioral_guidance(persona)
+     
 
     @classmethod
     def _get_persona_technical_guidance(cls, persona: str) -> str:
@@ -347,9 +344,8 @@ Interview Style: {company_info['interview_style']}"""
         """Get general guidance for interview type"""
         if interview_type == InterviewType.TECHNICAL:
             return "Focus on technical skills, problem-solving abilities, and relevant experience."
-        elif interview_type == InterviewType.BEHAVIORAL:
-            return "Focus on past experiences, soft skills, and cultural fit using the STAR method."
-        return ""
+        
+        return "Focus on past experiences, soft skills, and cultural fit using the STAR method."
 
     @classmethod
     def _get_persona_focus_areas(cls, persona: str, interview_type: InterviewType) -> list[str]:

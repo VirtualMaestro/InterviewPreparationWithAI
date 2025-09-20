@@ -19,7 +19,7 @@ from typing import Any, final
 import streamlit as st
 
 from src.ai.generator import GenerationResult
-from src.models.enums import ExperienceLevel, InterviewType, PromptTechnique
+from src.models.enums import ExperienceLevel, InterviewType, PersonaRole, PromptTechnique, get_persona_enum
 from src.utils.security import ValidationResult
 
 # Add src directory to path BEFORE any other imports
@@ -192,6 +192,11 @@ class InterviewPrepGUI:
                     key="prompt_technique"
                 )
 
+                persona: str = PersonaRole.NEUTRAL.value
+                if prompt_tech == "Role Based" :
+                    persona = st.selectbox("Persona", 
+                        [PersonaRole.STRICT.value, PersonaRole.FRIENDLY.value, PersonaRole.NEUTRAL.value], 1, key = "persona")
+
                 model: str = st.selectbox("Model", options=[AIModel.GPT_4O.value, AIModel.GPT_5.value], index = 0, key = "model")
                 
                 temperature = self.config.temperature
@@ -232,6 +237,7 @@ class InterviewPrepGUI:
             "session_mode": session_mode,
             "questions_num": questions_num,
             "prompt_technique": prompt_tech,
+            "persona": get_persona_enum(persona),
             "model": model,
             "temperature": temperature,
             "top_p": top_p,
@@ -336,7 +342,7 @@ class InterviewPrepGUI:
     
     def map_config_to_enums(self, sidebar_config: dict[str, Any]) -> dict[str, Any]:
         """Map sidebar configuration to internal enums."""
-        # Map experience level
+        
         exp_mapping: dict[str, ExperienceLevel] = {
             "Junior (1-2 years)": ExperienceLevel.JUNIOR,
             "Mid-level (3-5 years)": ExperienceLevel.MID,
@@ -344,13 +350,11 @@ class InterviewPrepGUI:
             "Lead/Principal": ExperienceLevel.LEAD
         }
         
-        # Map question type
         type_mapping: dict[str, InterviewType] = {
             "Technical": InterviewType.TECHNICAL,
             "Behavioural": InterviewType.BEHAVIORAL
         }
         
-        # Map prompt technique
         technique_mapping: dict[str, PromptTechnique] = {
             "Zero Shot": PromptTechnique.ZERO_SHOT,
             "Few Shot": PromptTechnique.FEW_SHOT,
@@ -370,7 +374,8 @@ class InterviewPrepGUI:
             "experience_level": exp_mapping[sidebar_config["experience_level"]],
             "interview_type": type_mapping[sidebar_config["question_type"]],
             "prompt_technique": technique_mapping[sidebar_config["prompt_technique"]],
-            "question_count": sidebar_config.get("questions_num") 
+            "question_count": sidebar_config.get("questions_num"),
+            "persona": sidebar_config["persona"] 
         }
     
     def ensure_generator_initialized(self):
@@ -439,11 +444,12 @@ class InterviewPrepGUI:
             enhanced_job_description = f"{config['job_description']}\n\nIMPORTANT: Generate exactly {config['question_count']} complete interview questions with detailed scenarios and context, not just titles or topic names."
 
             generation_request = SimpleGenerationRequest(
-                job_description=enhanced_job_description,
-                interview_type=config["interview_type"],
-                experience_level=config["experience_level"],
-                prompt_technique=config["prompt_technique"],
-                question_count=config["question_count"]
+                job_description = enhanced_job_description,
+                interview_type = config["interview_type"],
+                experience_level = config["experience_level"],
+                prompt_technique = config["prompt_technique"],
+                question_count = config["question_count"],
+                persona = config["persona"]
             )
             
             # generation_request.ai_settings.temperature = config["temperature"]
@@ -453,10 +459,7 @@ class InterviewPrepGUI:
             st.info("🔍 Debug: Making API call to OpenAI...")
 
             # Generate questions using existing system
-            result: GenerationResult = await self.generator.generate_questions(
-                generation_request,
-                preferred_technique=config["prompt_technique"]
-            )
+            result: GenerationResult = await self.generator.generate_questions(generation_request, config["prompt_technique"])
 
             print(f"DEBUG: API call completed. Success: {result.success}")
             if result.success:
@@ -561,6 +564,7 @@ class InterviewPrepGUI:
             return {
                 'questions': final_questions,
                 'recommendations': result.recommendations,
+                'raw': result.raw_response,
                 'cost_breakdown': {
                     'input_cost': result.cost_breakdown.input_cost,
                     'output_cost': result.cost_breakdown.output_cost,
@@ -597,47 +601,46 @@ class InterviewPrepGUI:
                 
                 # Run async generation
                 try:
-                    results: dict[str, Any] | None = asyncio.run(
-                        self.generate_questions_async(mapped_config)
-                    )
+                    results: dict[str, Any] | None = asyncio.run(self.generate_questions_async(mapped_config))
                     
-                    if results and results.get('questions'):
-                        # Debug: Show what we got
-                        if self.debug_mode:
-                            st.write("Debug - Raw results:", results)
-                            st.write("Debug - Questions list:", results['questions'])
+                    # if results and results.get('questions'):
+                    #     # Debug: Show what we got
+                    #     if self.debug_mode:
+                    #         st.write("Debug - Raw results:", results)
+                    #         st.write("Debug - Questions list:", results['questions'])
 
-                        # Format questions for display
-                        questions_text = "**Generated Questions:**\n\n"
-                        # Fix: Use the correct key and handle None values properly
-                        requested_count = sidebar_config.get("questions_num") or 5
+                    #     # Format questions for display
+                    #     questions_text = "**Generated Questions:**\n\n"
+                    #     # Fix: Use the correct key and handle None values properly
+                    #     requested_count = sidebar_config.get("questions_num") or 5
 
-                        # Debug information
-                        if self.debug_mode:
-                            st.write(f"🐛 Debug - Requested count: {requested_count}")
-                            st.write(f"🐛 Debug - Total questions generated: {len(results['questions'])}")
-                            st.write(f"🐛 Debug - Sidebar config: {sidebar_config}")
+                    #     # Debug information
+                    #     if self.debug_mode:
+                    #         st.write(f"🐛 Debug - Requested count: {requested_count}")
+                    #         st.write(f"🐛 Debug - Total questions generated: {len(results['questions'])}")
+                    #         st.write(f"🐛 Debug - Sidebar config: {sidebar_config}")
 
-                        questions_list = results['questions'][:requested_count]
+                    #     questions_list = results['questions'][:requested_count]
 
-                        # Check if questions are empty
-                        if not any(q.strip() for q in questions_list):
-                            st.error("Generated questions are empty. This might be an API response parsing issue.")
-                            if self.debug_mode:
-                                st.write("Empty questions detected:", questions_list)
-                            return
+                    #     # Check if questions are empty
+                    #     if not any(q.strip() for q in questions_list):
+                    #         st.error("Generated questions are empty. This might be an API response parsing issue.")
+                    #         if self.debug_mode:
+                    #             st.write("Empty questions detected:", questions_list)
+                    #         return
 
-                        for i, question in enumerate(questions_list, 1):
-                            if question.strip():  # Only show non-empty questions
-                                questions_text += f"{i}. {question.strip()}\n\n"
+                    #     for i, question in enumerate(questions_list, 1):
+                    #         if question.strip():  # Only show non-empty questions
+                    #             questions_text += f"{i}. {question.strip()}\n\n"
 
                         # Update chat messages
-                        st.session_state.chat_messages = [questions_text]
-                        st.rerun()
-                    else:
-                        st.error("Failed to generate questions. Please try again.")
-                        if self.debug_mode and results:
-                            st.write("Debug - Full results:", results)
+                        # st.session_state.chat_messages = [questions_text]
+                    st.session_state.chat_messages = [results['raw']]
+                    st.rerun()
+                    # else:
+                    #     st.error("Failed to generate questions. Please try again.")
+                    #     if self.debug_mode and results:
+                    #         st.write("Debug - Full results:", results)
                 except Exception as e:
                     st.error(f"Error generating questions: {str(e)}")
     
@@ -659,13 +662,14 @@ class InterviewPrepGUI:
                 interview_type = mapped_config["interview_type"],
                 experience_level = mapped_config["experience_level"],
                 prompt_technique = mapped_config["prompt_technique"],
-                question_count = mapped_config["question_count"]
+                question_count = mapped_config["question_count"],
+                persona = mapped_config["persona"] 
             )
 
             # generation_request.ai_settings.temperature = mapped_config["temperature"]
 
             # Generate questions
-            result = await self.generator.generate_questions(
+            result = await self.generator.generate_mock_questions(
                 generation_request,
                 preferred_technique = mapped_config["prompt_technique"]
             )
@@ -1029,7 +1033,7 @@ class InterviewPrepGUI:
             return
         
         # Render sidebar and get configuration
-        sidebar_config: dict[str, str | int | float | None] = self.render_sidebar()
+        sidebar_config: dict[str, str | int | float | PersonaRole | None] = self.render_sidebar()
         
         # Render main content and get controls
         controls: dict[str, bool | str | None] = self.render_main_content(sidebar_config)

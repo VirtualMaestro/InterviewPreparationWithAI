@@ -42,7 +42,7 @@ class ZeroShotPrompts:
 
                 Create questions that test fundamental programming concepts, basic problem-solving skills, and practical knowledge of the technologies mentioned. Questions should be appropriate for someone with 1-2 years of experience and focus on core concepts rather than advanced system design.
 
-                Questions:""",
+                Important: Do not include in your response your greetings or other uneeded sentences. Only questions""",
             metadata={
                 "difficulty": "beginner",
                 "approach": "direct_generation",
@@ -58,12 +58,10 @@ class ZeroShotPrompts:
             interview_type=InterviewType.TECHNICAL,
             experience_level=ExperienceLevel.MID,
             template="""Generate {question_count} technical interview questions for a {experience_level} developer position.
-
                 Job Description: {job_description}
-
-                Create questions that test intermediate programming skills, system design thinking, performance optimization, and best practices. Questions should be appropriate for someone with 3-5 years of experience and include both technical depth and practical application scenarios.
-
-                Questions:""",
+                Create questions that test intermediate programming skills, system design thinking, performance optimization, and best practices. 
+                Questions should be appropriate for someone with 3-5 years of experience and include both technical depth and practical application scenarios.
+                Important: Do not include in your response your greetings or other uneeded sentences. Only questions""",
             metadata={
                 "difficulty": "intermediate",
                 "approach": "direct_generation",
@@ -84,7 +82,7 @@ Job Description: {job_description}
 
 Create questions that test advanced system architecture, scalability, technical leadership, and strategic decision-making. Questions should be appropriate for someone with 5+ years of experience and include complex problem-solving scenarios that demonstrate senior-level expertise.
 
-Questions:""",
+Important: Do not include in your response your greetings or other uneeded sentences. Only questions""",
             metadata={
                 "difficulty": "advanced",
                 "approach": "direct_generation",
@@ -105,7 +103,7 @@ Job Description: {job_description}
 
 Create questions that test technical vision, organizational impact, strategic planning, and executive-level technical leadership. Questions should be appropriate for principal/staff level positions and focus on transformation, culture building, and industry influence.
 
-Questions:""",
+Important: Do not include in your response your greetings or other uneeded sentences. Only questions""",
             metadata={
                 "difficulty": "expert",
                 "approach": "direct_generation",
@@ -134,7 +132,7 @@ Questions:""",
 
             Create behavioral questions that assess learning ability, collaboration skills, communication, and professional growth. Questions should be appropriate for someone with 1-2 years of experience and focus on individual contributor scenarios.
 
-            Questions:""",
+            Important: Do not include in your response your greetings or other uneeded sentences. Only questions""",
             metadata={
                 "difficulty": "entry_level",
                 "approach": "direct_generation",
@@ -155,7 +153,7 @@ Questions:""",
 
                 Create behavioral questions that assess influence, project management, cross-team collaboration, and emerging leadership skills. Questions should be appropriate for someone with 3-5 years of experience and include scenarios involving multiple stakeholders.
 
-                Questions:""",
+                Important: Do not include in your response your greetings or other uneeded sentences. Only questions""",
 
             metadata={
                 "difficulty": "intermediate",
@@ -177,7 +175,7 @@ Questions:""",
 
                 Create behavioral questions that assess strategic thinking, mentoring, organizational impact, and leadership capabilities. Questions should be appropriate for someone with 5+ years of experience and focus on complex stakeholder management and team development.
 
-                Questions:""",
+                Important: Do not include in your response your greetings or other uneeded sentences. Only questions""",
 
             metadata={
                 "difficulty": "advanced",
@@ -199,7 +197,7 @@ Questions:""",
 
                 Create behavioral questions that assess organizational transformation, executive communication, culture building, and strategic vision. Questions should be appropriate for principal/staff level positions and focus on large-scale impact and industry influence.
 
-                Questions:""",
+                Important: Do not include in your response your greetings or other uneeded sentences. Only questions""",
 
             metadata={
                 "difficulty": "expert",

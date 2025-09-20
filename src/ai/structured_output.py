@@ -129,7 +129,7 @@ class StructuredOutputPrompts:
 
             Job Description: {job_description}
 
-            Respond with valid JSON only:""",
+            Important: Stick to the given json structure and do not add any other symbols (like ```json), do not wrap up in qutation, only clear and valid JSON only.""",
 
             metadata={
                 "difficulty_focus": "easy_medium",
@@ -193,7 +193,7 @@ class StructuredOutputPrompts:
 
             Job Description: {job_description}
 
-            Respond with valid JSON only:""",
+            Important: Stick to the given json structure and do not add any other symbols (like ```json), do not wrap up in qutation, only clear and valid JSON only.""",
 
             metadata={
                 "difficulty_focus": "medium_hard",
@@ -257,7 +257,7 @@ class StructuredOutputPrompts:
 
             Job Description: {job_description}
 
-            Respond with valid JSON only:""",
+            Important: Stick to the given json structure and do not add any other symbols (like ```json), do not wrap up in qutation, only clear and valid JSON only.""",
 
             metadata={
                 "difficulty_focus": "hard",
@@ -321,7 +321,7 @@ class StructuredOutputPrompts:
 
             Job Description: {job_description}
 
-            Respond with valid JSON only:""",
+            Important: Stick to the given json structure and do not add any other symbols (like ```json), do not wrap up in qutation, only clear and valid JSON only.""",
 
             metadata={
                 "difficulty_focus": "expert",
@@ -392,7 +392,7 @@ class StructuredOutputPrompts:
 
             Job Description: {job_description}
 
-            Respond with valid JSON only:""",
+            Important: Stick to the given json structure and do not add any other symbols (like ```json), do not wrap up in qutation, only clear and valid JSON only.""",
 
             metadata={
                 "difficulty_focus": "easy",
@@ -455,7 +455,7 @@ class StructuredOutputPrompts:
 
             Job Description: {job_description}
 
-            Respond with valid JSON only:""",
+            Important: Stick to the given json structure and do not add any other symbols (like ```json), do not wrap up in qutation, only clear and valid JSON only.""",
 
             metadata={
                 "difficulty_focus": "medium",
@@ -518,7 +518,7 @@ class StructuredOutputPrompts:
 
             Job Description: {job_description}
 
-            Respond with valid JSON only:""",
+            Important: Stick to the given json structure and do not add any other symbols (like ```json), do not wrap up in qutation, only clear and valid JSON only.""",
 
             metadata={
                 "difficulty_focus": "hard",
@@ -581,7 +581,7 @@ class StructuredOutputPrompts:
 
             Job Description: {job_description}
 
-            Respond with valid JSON only:""",
+            Important: Stick to the given json structure and do not add any other symbols (like ```json), do not wrap up in qutation, only clear and valid JSON only.""",
 
             metadata={
                 "difficulty_focus": "expert",

@@ -3,7 +3,7 @@ Simple data schemas without Pydantic for basic functionality
 """
 from dataclasses import dataclass
 
-from .enums import ExperienceLevel, InterviewType, PromptTechnique
+from .enums import ExperienceLevel, InterviewType, PersonaRole, PromptTechnique
 
 
 @dataclass
@@ -32,5 +32,6 @@ class SimpleGenerationRequest:
     interview_type: InterviewType
     experience_level: ExperienceLevel
     prompt_technique: PromptTechnique
-    question_count: int = 5
+    question_count: int
+    persona: PersonaRole
     
