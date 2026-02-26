@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "lucastamoios-openspec-to-beads": {
+      "source": "smithery/ai",
+      "sourceType": "well-known",
+      "computedHash": "fc8fadb9c82977adb91aa24fc1bf0e375dab3e654dd5fe16920f2bed21182214"
+    }
+  }
+}
