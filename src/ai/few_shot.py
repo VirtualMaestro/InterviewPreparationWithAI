@@ -35,7 +35,8 @@ class FewShotPrompts:
             technique=PromptTechnique.FEW_SHOT,
             interview_type=InterviewType.TECHNICAL,
             experience_level=ExperienceLevel.JUNIOR,
-            template="""You are an experienced technical interviewer. Generate {question_count} technical interview questions for a {experience_level} position based on this job description: {job_description}
+            template="""You are an experienced technical interviewer.
+                Generate {question_count} technical interview questions for a {experience_level} position based on this job description: {job_description}
 
                 Here are examples of appropriate {experience_level} technical questions:
 
