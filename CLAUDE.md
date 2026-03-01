@@ -354,11 +354,12 @@ After implementing any feature, run comprehensive tests to ensure reliability an
 - **`.kiro/specs/ai-interview-prep/tasks.md`** - Implementation plan with current status
 - **`.kiro/steering/tech.md`** - Technology stack and development standards
 - **`.kiro/steering/structure.md`** - Project organization and file structure
-- **`.kiro/steering/product.md`** - Product overview and core features
 
-### Project Status:
-- **`HANDOFF_SUMMARY.md`** - Detailed progress status and implementation notes
-- **`RUN_APP.md`** - Application running instructions and setup guidance
+### Project Knowledge Base (OpenSpec)
+Architecture, requirements, and active work are maintained in OpenSpec.
+- **`openspec/specs/`** - Source of truth for all feature specifications (10 specs)
+- **`openspec/changes/`** - Active work and proposed changes (4 changes)
+- **`openspec/config.yaml`** - Project context automatically injected into all specs
 
 ### Key Implementation Files:
 - **`app.py`** - GUI specification-compliant interface (single entry point)
